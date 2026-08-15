@@ -6,6 +6,7 @@
       "displayName": "Debug (GCC)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/debug-gcc",
+      "toolchainFile": "${sourceDir}/build/debug-gcc/conan_toolchain.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_COMPILER": "g++"
@@ -16,6 +17,7 @@
       "displayName": "Release (GCC)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/release-gcc",
+      "toolchainFile": "${sourceDir}/build/release-gcc/conan_toolchain.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CXX_COMPILER": "g++"
