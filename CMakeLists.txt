@@ -9,6 +9,6 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-#add_subdirectory(shared)
-#add_subdirectory(order-service)
+add_subdirectory(shared)
+add_subdirectory(order-service)
 # add_subdirectory(gateway)
