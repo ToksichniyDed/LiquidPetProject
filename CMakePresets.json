@@ -27,5 +27,19 @@
   "buildPresets": [
     { "name": "debug-gcc", "configurePreset": "debug-gcc" },
     { "name": "release-gcc", "configurePreset": "release-gcc" }
+  ],
+  "testPresets": [
+    {
+      "name": "debug-gcc",
+      "configurePreset": "debug-gcc",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 14 }
+    },
+    {
+      "name": "release-gcc",
+      "configurePreset": "release-gcc",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 14 }
+    }
   ]
 }

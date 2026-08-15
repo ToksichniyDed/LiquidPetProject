@@ -18,8 +18,6 @@ namespace order_system::models {
         Shipped,
         Cancelled
     };
-
-    
 }
 
 #endif //LIQUIDPETPROJECT_ORDER_H

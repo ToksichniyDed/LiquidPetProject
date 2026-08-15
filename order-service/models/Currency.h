@@ -13,18 +13,18 @@
 namespace order_system::models {
     class Currency {
     public:
-        enum class CurrencyError {
+        enum class Error {
             EmptyCurrency,
             NegativeAmount,
         };
 
     public:
-        static std::expected<Currency, CurrencyError> create(std::string code, int minorDigits) {
+        static std::expected<Currency, Error> create(std::string code, std::int8_t minorDigits) {
             if (minorDigits < 0)
-                return std::unexpected(CurrencyError::NegativeAmount);
+                return std::unexpected(Error::NegativeAmount);
 
             if (code.empty())
-                return std::unexpected(CurrencyError::EmptyCurrency);
+                return std::unexpected(Error::EmptyCurrency);
 
             return Currency{std::move(code), minorDigits};
         }
@@ -33,7 +33,7 @@ namespace order_system::models {
             return _code;
         }
 
-        int minorDigits() const {
+        std::int8_t minorDigits() const {
             return _minorDigits;
         }
 
@@ -42,7 +42,7 @@ namespace order_system::models {
         }
 
     private:
-        Currency(std::string code, int minorDigits) : _code(std::move(code)), _minorDigits(minorDigits) {
+        Currency(std::string code, std::int8_t minorDigits) : _code(std::move(code)), _minorDigits(minorDigits) {
         };
 
     private:

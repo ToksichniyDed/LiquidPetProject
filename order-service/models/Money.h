@@ -7,15 +7,15 @@
 
 #include <expected>
 #include <limits>
-#include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "Currency.h"
 
 namespace order_system::models {
     class Money {
     public:
-        enum class MoneyError {
+        enum class Error {
             DifferentCurrencies,
             Underflow,
             Overflow,
@@ -23,46 +23,46 @@ namespace order_system::models {
         };
 
     public:
-        static std::expected<Money, MoneyError> create(int64_t minorUnits, Currency currency) {
+        static std::expected<Money, Error> create(int64_t minorUnits, Currency currency) {
             if (minorUnits < 0)
-                return std::unexpected(MoneyError::NegativeAmount);
+                return std::unexpected(Error::NegativeAmount);
 
-            return Money{minorUnits, currency};
+            return Money{minorUnits, std::move(currency)};
         }
 
         bool operator ==(const Money& other) const {
             return _currency == other._currency && _minorUnits == other._minorUnits;
         }
 
-        std::expected<Money, MoneyError> operator +(const Money& other) const {
+        std::expected<Money, Error> operator +(const Money& other) const {
             if (_currency.code() != other._currency.code())
-                return std::unexpected(MoneyError::DifferentCurrencies);
+                return std::unexpected(Error::DifferentCurrencies);
 
             if (_minorUnits > std::numeric_limits<int64_t>::max() - other.minorUnits())
-                return std::unexpected(MoneyError::Overflow);
+                return std::unexpected(Error::Overflow);
 
             return Money{_minorUnits + other._minorUnits, _currency};
         }
 
-        std::expected<Money, MoneyError> operator -(const Money& other) const {
+        std::expected<Money, Error> operator -(const Money& other) const {
             if (_currency.code() != other._currency.code())
-                return std::unexpected(MoneyError::DifferentCurrencies);
+                return std::unexpected(Error::DifferentCurrencies);
 
             if (_minorUnits < other._minorUnits)
-                return std::unexpected(MoneyError::Underflow);
+                return std::unexpected(Error::Underflow);
 
             return Money{_minorUnits - other._minorUnits, _currency};
         }
 
-        std::expected<Money, MoneyError> operator *(int quantity) const {
+        std::expected<Money, Error> operator *(int quantity) const {
             if (quantity == 0)
                 return Money{0, _currency};
 
             if (quantity < 0)
-                return std::unexpected(MoneyError::NegativeAmount);
+                return std::unexpected(Error::NegativeAmount);
 
             if (_minorUnits > std::numeric_limits<int64_t>::max() / quantity)
-                return std::unexpected(MoneyError::Overflow);
+                return std::unexpected(Error::Overflow);
 
             return Money{_minorUnits * quantity, _currency};
         }
