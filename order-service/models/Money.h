@@ -54,7 +54,7 @@ namespace order_system::models {
             return Money{_minorUnits - other._minorUnits, _currency};
         }
 
-        std::expected<Money, Error> operator *(int quantity) const {
+        std::expected<Money, Error> operator *(const int quantity) const {
             if (quantity == 0)
                 return Money{0, _currency};
 
