@@ -20,14 +20,14 @@ TEST(CurrencyTest, CreateFailsWithInvalidAmount) {
     auto currency = Currency::create("RUB", -1);
 
     ASSERT_FALSE(currency.has_value());
-    EXPECT_EQ(currency.error(), Currency::Error::NegativeAmount);
+    EXPECT_EQ(currency.error(), CurrencyError::NegativeAmount);
 }
 
 TEST(CurrencyTest, CreateFailsWithEmptyCurrency) {
     auto currency = Currency::create("", 2);
 
     ASSERT_FALSE(currency.has_value());
-    EXPECT_EQ(currency.error(), Currency::Error::EmptyCurrency);
+    EXPECT_EQ(currency.error(), CurrencyError::EmptyCurrency);
 }
 
 TEST(CurrencyTest, CreateSucceedsWithZeroAmount) {

@@ -9,12 +9,14 @@
 #include <optional>
 #include <regex>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include "StrongID.h"
 #include "Money.h"
 
 namespace order_system::models {
+
     struct OrderIdTag {
     };
 
@@ -52,17 +54,83 @@ namespace order_system::models {
     using UserId = StrongID<UserIdTag>;
     using ProductId = StrongID<ProductIdTag>;
 
+    enum class OrderItemError {
+        InvalidQuantity = 1,
+        PriceOverflow
+    };
+
+    class OrderItemErrorCategory : public std::error_category {
+    public:
+        const char* name() const noexcept override { return "orderItem"; }
+
+        std::string message(int ev) const override {
+            switch (static_cast<OrderItemError>(ev)) {
+                case OrderItemError::InvalidQuantity:
+                    return "invalid quantity";
+                case OrderItemError::PriceOverflow:
+                    return "price overflow";
+                default:
+                    return "unknown orderItem error";
+            }
+        }
+    };
+
+    inline const OrderItemErrorCategory& orderItemErrorCategory() {
+        static OrderItemErrorCategory instance;
+        return instance;
+    }
+
+    inline std::error_code make_error_code(OrderItemError e) {
+        return {static_cast<int>(e), orderItemErrorCategory()};
+    }
+
+    enum class OrderError {
+        EmptyItems = 1
+    };
+
+    class OrderErrorCategory : public std::error_category {
+    public:
+        const char* name() const noexcept override { return "order"; }
+
+        std::string message(int ev) const override {
+            switch (static_cast<OrderError>(ev)) {
+                case OrderError::EmptyItems:
+                    return "empty items";
+                default:
+                    return "unknown order error";
+            }
+        }
+    };
+
+    inline const OrderErrorCategory& orderErrorCategory() {
+        static OrderErrorCategory instance;
+        return instance;
+    }
+
+    inline std::error_code make_error_code(OrderError e) {
+        return {static_cast<int>(e), orderErrorCategory()};
+    }
+
+}
+
+namespace std {
+    template <>
+    struct is_error_code_enum<order_system::models::OrderItemError> : true_type {
+    };
+
+    template <>
+    struct is_error_code_enum<order_system::models::OrderError> : true_type {
+    };
+}
+
+namespace order_system::models {
+
     class OrderItem {
     public:
-        enum class Error {
-            InvalidQuantity,
-            PriceOverflow
-        };
-
-    public:
-        static std::expected<OrderItem, Error> create(ProductId productId, int quantity, Money priceAtOrderTime) {
+        static std::expected<OrderItem, std::error_code> create(ProductId productId, int quantity,
+                                                                Money priceAtOrderTime) {
             if (quantity <= 0)
-                return std::unexpected(Error::InvalidQuantity);
+                return std::unexpected(OrderItemError::InvalidQuantity);
 
             return OrderItem{std::move(productId), quantity, std::move(priceAtOrderTime)};
         }
@@ -71,11 +139,11 @@ namespace order_system::models {
         int quantity() const { return _quantity; }
         const Money& priceAtOrderTime() const { return _priceAtOrderTime; }
 
-        std::expected<Money, Error> lineTotal() const {
+        std::expected<Money, std::error_code> lineTotal() const {
             auto totalPrice = _priceAtOrderTime * _quantity;
 
             if (!totalPrice.has_value())
-                return std::unexpected(Error::PriceOverflow);
+                return std::unexpected(OrderItemError::PriceOverflow);
 
             return totalPrice.value();
         }
@@ -95,22 +163,12 @@ namespace order_system::models {
 
     class Order {
     public:
-        enum class Error {
-            EmptyItems,
-            Unknown
-        };
-
-        enum class OrderStatus {
-            Created,
-            Reserved,
-            Shipped,
-            Cancelled
-        };
+        enum class OrderStatus { Created, Reserved, Shipped, Cancelled };
 
     public:
-        static std::expected<Order, Error> create(UserId userId, std::vector<OrderItem> items) {
+        static std::expected<Order, std::error_code> create(UserId userId, std::vector<OrderItem> items) {
             if (items.empty())
-                return std::unexpected(Error::EmptyItems);
+                return std::unexpected(OrderError::EmptyItems);
 
             return Order{std::move(userId), std::move(items)};
         }
@@ -120,28 +178,23 @@ namespace order_system::models {
         const std::vector<OrderItem>& items() const { return _items; }
         OrderStatus status() const { return _status; }
 
-        std::expected<Money, Error> totalAmount() const {
+        std::expected<Money, std::error_code> totalAmount() const {
             auto currency = _items.front().priceAtOrderTime().currency();
 
-            auto total = Money::create(0, currency);
-            if (!total.has_value())
-                return std::unexpected(Error::Unknown);
-
-            Money accumulated = total.value();
+            std::expected<Money, std::error_code> total = Money::create(0, currency);
 
             for (const auto& item : _items) {
+                if (!total.has_value())
+                    return total;
+
                 auto lineTotal = item.lineTotal();
                 if (!lineTotal.has_value())
-                    return std::unexpected(Error::Unknown);
+                    return std::unexpected(lineTotal.error());
 
-                auto sum = accumulated + lineTotal.value();
-                if (!sum.has_value())
-                    return std::unexpected(Error::Unknown);
-
-                accumulated = sum.value();
+                total = total.value() + lineTotal.value();
             }
 
-            return accumulated;
+            return total;
         }
 
         void assignId(OrderId id) {
@@ -160,6 +213,6 @@ namespace order_system::models {
         std::vector<OrderItem> _items;
         OrderStatus _status;
     };
-};
+}
 
 #endif //LIQUIDPETPROJECT_ORDER_H
