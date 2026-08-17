@@ -43,7 +43,7 @@ TEST(MoneyTest, CreateFailsWithNegativeAmount) {
     auto money = Money::create(-1, currency.value());
     ASSERT_FALSE(money.has_value());
 
-    EXPECT_EQ(money.error(), Money::Error::NegativeAmount);
+    EXPECT_EQ(money.error(), MoneyError::NegativeAmount);
 }
 
 TEST(MoneyTest, EqualOperatorTrueForSameAmountAndCurrency) {
@@ -125,7 +125,7 @@ TEST(MoneyTest, AdditionFailsForDifferentCurrencies) {
 
     ASSERT_FALSE(money3.has_value());
 
-    EXPECT_EQ(money3.error(), Money::Error::DifferentCurrencies);
+    EXPECT_EQ(money3.error(), MoneyError::DifferentCurrencies);
 }
 
 TEST(MoneyTest, AdditionFailsOnOverflow) {
@@ -141,7 +141,7 @@ TEST(MoneyTest, AdditionFailsOnOverflow) {
     auto result = money1.value() + money2.value();
 
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), Money::Error::Overflow);
+    EXPECT_EQ(result.error(), MoneyError::Overflow);
 }
 
 TEST(MoneyTest, AdditionSucceedsAtMaxBoundary) {
@@ -192,7 +192,7 @@ TEST(MoneyTest, SubtractionFailsForDifferentCurrencies) {
     auto result = money1.value() - money2.value();
 
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), Money::Error::DifferentCurrencies);
+    EXPECT_EQ(result.error(), MoneyError::DifferentCurrencies);
 }
 
 TEST(MoneyTest, SubtractionFailsOnUnderflow) {
@@ -208,7 +208,7 @@ TEST(MoneyTest, SubtractionFailsOnUnderflow) {
     auto result = money1.value() - money2.value();
 
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), Money::Error::Underflow);
+    EXPECT_EQ(result.error(), MoneyError::Underflow);
 }
 
 TEST(MoneyTest, SubtractionSucceedsWhenResultIsZero) {
@@ -263,7 +263,7 @@ TEST(MoneyTest, MultiplicationFailsWithNegativeQuantity) {
     auto result = money.value() * -3;
 
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), Money::Error::NegativeAmount);
+    EXPECT_EQ(result.error(), MoneyError::NegativeAmount);
 }
 
 TEST(MoneyTest, MultiplicationFailsOnOverflow) {
@@ -276,7 +276,7 @@ TEST(MoneyTest, MultiplicationFailsOnOverflow) {
     auto result = money.value() * 3;
 
     ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), Money::Error::Overflow);
+    EXPECT_EQ(result.error(), MoneyError::Overflow);
 }
 
 TEST(MoneyTest, MinorUnitsReturnsConstructedValue) {
