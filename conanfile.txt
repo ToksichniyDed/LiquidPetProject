@@ -1,6 +1,7 @@
 [requires]
 gtest/1.18.0
 spdlog/1.17.0
+libpqxx/8.0.2
 
 [generators]
 CMakeDeps
