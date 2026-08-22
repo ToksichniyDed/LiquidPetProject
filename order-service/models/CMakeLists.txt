@@ -6,6 +6,11 @@ target_include_directories(order_models INTERFACE
 
 target_compile_features(order_models INTERFACE cxx_std_23)
 
+find_package(Boost REQUIRED CONFIG)
+target_link_libraries(order_models INTERFACE
+    Boost::headers
+)
+
 if(BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)
 

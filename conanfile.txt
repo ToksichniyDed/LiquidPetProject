@@ -2,6 +2,7 @@
 gtest/1.18.0
 spdlog/1.17.0
 libpqxx/8.0.2
+boost/1.91.0
 
 [generators]
 CMakeDeps
@@ -9,3 +10,7 @@ CMakeToolchain
 
 [options]
 gtest/*:build_gmock=True
+boost/*:without_cobalt=True
+boost/*:without_mpi=True
+boost/*:without_graph_parallel=True
+boost/*:without_python=True
