@@ -10,6 +10,7 @@ find_package(Boost REQUIRED CONFIG)
 
 target_link_libraries(order_handlers PRIVATE
     order_models
+    shared
     Boost::headers
 )
 
