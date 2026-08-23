@@ -13,8 +13,8 @@ namespace order_service::handlers {
     namespace http = beast::http;
     using tcp = boost::asio::ip::tcp;
 
-    HttpServer::HttpServer(NetworkConfiguration config): _networkConfiguration(std::move(config)), _ioContext(1), _acceptor(_ioContext, tcp::endpoint(
-        boost::asio::ip::make_address(_networkConfiguration.address.value()), _networkConfiguration.port))  {
+    HttpServer::HttpServer(order_system::models::NetworkConfiguration config): _networkConfiguration(std::move(config)), _ioContext(1), _acceptor(_ioContext, tcp::endpoint(
+                                                                                                                                                      boost::asio::ip::make_address(_networkConfiguration.address.value()), _networkConfiguration.port))  {
     }
 
     void HttpServer::run() {

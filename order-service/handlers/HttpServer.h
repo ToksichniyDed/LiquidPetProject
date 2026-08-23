@@ -7,17 +7,11 @@
 
 #include <boost/asio.hpp>
 
-#include <NetworkAddress.h>
+#include <NetworkConfiguration.h>
 
 namespace order_service::handlers {
-
-    struct NetworkConfiguration {
-        order_system::models::NetworkAddress address;
-        uint16_t port{8080};
-    };
-
     class HttpServer {
-        explicit HttpServer(NetworkConfiguration config);
+        explicit HttpServer(order_system::models::NetworkConfiguration config);
 
         [[noreturn]] void run();
 
@@ -26,7 +20,7 @@ namespace order_service::handlers {
         void handleConnection(boost::asio::ip::tcp::socket socket) const;
 
     private:
-        NetworkConfiguration _networkConfiguration;
+        order_system::models::NetworkConfiguration _networkConfiguration;
         boost::asio::io_context _ioContext;
         boost::asio::ip::tcp::acceptor _acceptor;
     };
