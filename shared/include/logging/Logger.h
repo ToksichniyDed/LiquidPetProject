@@ -22,9 +22,6 @@ namespace Logger {
     std::shared_ptr<spdlog::logger> get(std::string_view category);
 
     void setLoggingLevel(std::string_view category, spdlog::level::level_enum level);
-
-    void setFileFilter(std::string_view filename);
-    void clearFileFilter();
 }
 
 #endif //LIQUIDPETPROJECT_LOGGER_H

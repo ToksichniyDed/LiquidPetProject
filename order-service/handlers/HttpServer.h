@@ -11,6 +11,8 @@
 
 namespace order_service::handlers {
     class HttpServer {
+        public:
+
         explicit HttpServer(order_system::models::NetworkConfiguration config);
 
         [[noreturn]] void run();
