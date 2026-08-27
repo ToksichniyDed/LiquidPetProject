@@ -1,6 +1,7 @@
 set(SHARED_PUBLIC_HEADERS
     include/logging/Logger.h
     include/loader/ConfigurationLoader.h
+    include/http/HttpMessage.h
 )
 
 set(SHARED_SOURCES

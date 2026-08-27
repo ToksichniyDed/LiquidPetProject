@@ -54,7 +54,7 @@ namespace order_system::models {
     using UserId = StrongID<UserIdTag>;
     using ProductId = StrongID<ProductIdTag>;
 
-    enum class OrderItemError {
+    enum class OrderItemError : std::uint8_t {
         InvalidQuantity = 1,
         PriceOverflow
     };

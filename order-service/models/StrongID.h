@@ -15,7 +15,7 @@ namespace order_system::models {
     template <typename Tag>
     struct IdTraits;
 
-    enum class StrongIdError {
+    enum class StrongIdError : std::uint8_t {
         EmptyId = 1,
         InvalidFormat
     };

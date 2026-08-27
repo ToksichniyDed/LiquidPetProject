@@ -12,7 +12,7 @@
 
 namespace order_system::models {
 
-    enum class NetworkAddressError {
+    enum class NetworkAddressError : std::uint8_t {
         EmptyAddress = 1,
         InvalidFormat
     };

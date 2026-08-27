@@ -1,8 +1,12 @@
 set(ORDER_HANDLERS_HEADERS
-HttpServer.h)
+    HttpServer.h
+    IRequestHandler.h
+    HttpMessageConverter.h
+)
 
 set(ORDER_HANDLERS_SOURCES
-HttpServer.cpp)
+    HttpServer.cpp
+    HttpMessageConverter.cpp)
 
 add_library(order_handlers STATIC ${ORDER_HANDLERS_SOURCES})
 

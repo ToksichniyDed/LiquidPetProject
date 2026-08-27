@@ -15,7 +15,7 @@
 
 namespace order_system::models {
 
-    enum class MoneyError {
+    enum class MoneyError : std::uint8_t {
         NegativeAmount = 1,
         DifferentCurrencies,
         Underflow,

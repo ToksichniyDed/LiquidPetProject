@@ -11,7 +11,7 @@
 
 namespace order_system::models {
 
-    enum class CurrencyError {
+    enum class CurrencyError : std::uint8_t {
         EmptyCurrency = 1,
         NegativeAmount,
     };
