@@ -4,7 +4,7 @@
 
 #include <fstream>
 #include <gtest/gtest.h>
-#include "loader/ConfigurationLoader.h"
+#include <json/Json.h>
 
 namespace {
     struct LoadSectionTestCase {
@@ -12,7 +12,7 @@ namespace {
         std::optional<std::string> fileContent;
         std::string sectionName;
         bool expectSuccess;
-        std::optional<Loader::ConfigurationParseError> expectedError;
+        std::optional<Json::JsonParseError> expectedError;
     };
 }
 
@@ -49,7 +49,7 @@ TEST_P(LoadSectionTest, LoadSection) {
     const auto& testCase = GetParam();
 
     const auto result =
-            Loader::ConfigurationLoader::loadSection(
+            Json::JsonHelper::loadSection(
                 testFilePath,
                 testCase.sectionName
             );
@@ -85,7 +85,7 @@ INSTANTIATE_TEST_SUITE_P(LoadSectionTests,
                              .fileContent = std::nullopt,
                              .sectionName = {},
                              .expectSuccess = false,
-                             .expectedError = Loader::ConfigurationParseError::InvalidPath
+                             .expectedError = Json::JsonParseError::InvalidPath
 
                              },
                              LoadSectionTestCase{
@@ -93,7 +93,7 @@ INSTANTIATE_TEST_SUITE_P(LoadSectionTests,
                              .fileContent = R"({"network": {"address": 0.0.0.0", "port": 8080}})",
                              .sectionName = "network",
                              .expectSuccess = false,
-                             .expectedError = Loader::ConfigurationParseError::InvalidFormat
+                             .expectedError = Json::JsonParseError::InvalidFormat
 
                              },
                              LoadSectionTestCase{
@@ -101,7 +101,7 @@ INSTANTIATE_TEST_SUITE_P(LoadSectionTests,
                              .fileContent = R"({"network": {"address": "0.0.0.0", "port": 8080}})",
                              .sectionName = "some section",
                              .expectSuccess = false,
-                             .expectedError = Loader::ConfigurationParseError::SectionNotFound
+                             .expectedError = Json::JsonParseError::SectionNotFound
                              }), [](const ::testing::TestParamInfo<LoadSectionTestCase>& info) {
                          return info.param.testName;
                          });

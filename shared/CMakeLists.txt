@@ -1,12 +1,12 @@
 set(SHARED_PUBLIC_HEADERS
     include/logging/Logger.h
-    include/loader/ConfigurationLoader.h
+    include/json/Json.h
     include/http/HttpMessage.h
 )
 
 set(SHARED_SOURCES
     src/logging/Logger.cpp
-    src/loader/ConfigurationLoader.cpp
+    src/json/Json.cpp
 )
 
 add_library(shared STATIC ${SHARED_SOURCES})
@@ -25,7 +25,7 @@ if(BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)
 
     add_executable(order_shared_tests
-        src/loader/tests/ConfigurationLoaderTest.cpp
+        src/json/tests/JsonHelperTest.cpp
     )
 
     target_link_libraries(order_shared_tests PRIVATE

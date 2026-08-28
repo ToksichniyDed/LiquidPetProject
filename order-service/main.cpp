@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <iostream>
 
-#include <loader/ConfigurationLoader.h>
+#include <json/JsonHelper.h>
 #include <NetworkConfiguration.h>
 
 #include "handlers/HttpServer.h"
@@ -20,7 +20,7 @@ int main(const int argc, char* argv[]) {
 
     std::filesystem::path configPath{argv[1]};
 
-    auto networkSection = Loader::ConfigurationLoader::loadSection(configPath, "network");
+    auto networkSection = Loader::JsonHelper::loadSection(configPath, "network");
     if (!networkSection.has_value()) {
         std::cerr << "Error "<< networkSection.error().category().name()<< ": " << networkSection.error().message() << '\n';
         return 1;
