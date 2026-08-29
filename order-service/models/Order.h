@@ -84,8 +84,9 @@ namespace order_system::models {
         return {static_cast<int>(e), orderItemErrorCategory()};
     }
 
-    enum class OrderError {
-        EmptyItems = 1
+    enum class OrderError : std::uint8_t {
+        EmptyItems = 1,
+        InvalidItems
     };
 
     class OrderErrorCategory : public std::error_category {
@@ -96,6 +97,8 @@ namespace order_system::models {
             switch (static_cast<OrderError>(ev)) {
                 case OrderError::EmptyItems:
                     return "empty items";
+                case OrderError::InvalidItems:
+                    return "invalid items";
                 default:
                     return "unknown order error";
             }
