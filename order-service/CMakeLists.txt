@@ -14,6 +14,6 @@ target_link_libraries(order_service PRIVATE
     order_models
     order_repository
     order_handlers
-    order-models2json-mapper
+    order_models2json_mapper
     shared
 )

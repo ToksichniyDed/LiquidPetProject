@@ -4,6 +4,10 @@ set(ORDER_REPOSITORY_HEADERS
     IOrderRepository.h
 )
 
+target_include_directories(order_repository INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 target_sources(order_repository INTERFACE
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}

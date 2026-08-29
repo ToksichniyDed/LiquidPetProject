@@ -8,6 +8,7 @@
 #include <json/Json.h>
 #include <models/Money.h>
 #include <models2json-mapper/keys/MoneyJsonKeys.h>
+#include <models2json-mapper/mapper/CurrencyJsonMapper.h>
 
 namespace order_system::models2json_mapper {
     using namespace order_system::models;

@@ -1,0 +1,22 @@
+//
+// Created by DED on 27.08.2026.
+//
+
+#ifndef LIQUIDPETPROJECT_HEALTHHANDLER_H
+#define LIQUIDPETPROJECT_HEALTHHANDLER_H
+
+#include <handlers/IRequestHandler.h>
+
+namespace order_service::handlers {
+    class HealthHandler : public IRequestHandler {
+    public:
+        Http::Response handle(const Http::Request& /*request*/) override {
+            return {
+                .status = Http::Status::Ok,
+                .body = "OK"
+            };
+        }
+    };
+}
+
+#endif //LIQUIDPETPROJECT_HEALTHHANDLER_H
