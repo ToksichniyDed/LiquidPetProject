@@ -5,9 +5,9 @@
 #ifndef LIQUIDPETPROJECT_ORDERJSONPARSER_H
 #define LIQUIDPETPROJECT_ORDERJSONPARSER_H
 
-#include <models/Order.h>
-#include <models2json-mapper/keys/OrderJsonKeys.h>
-#include <models2json-mapper/mapper/MoneyJsonMapper.h>
+#include <Order.h>
+#include <keys/OrderJsonKeys.h>
+#include <mapper/MoneyJsonMapper.h>
 #include <json/Json.h>
 
 #include <utility>

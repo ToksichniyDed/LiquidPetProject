@@ -6,8 +6,8 @@
 #define LIQUIDPETPROJECT_CURRENCYJSONMAPPER_H
 
 #include <json/Json.h>
-#include <models/Currency.h>
-#include <models2json-mapper/keys/CurrencyJsonKeys.h>
+#include <Currency.h>
+#include <keys/CurrencyJsonKeys.h>
 
 namespace order_system::models2json_mapper {
     using namespace order_system::models;
