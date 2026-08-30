@@ -1,7 +1,7 @@
 add_subdirectory(models)
 add_subdirectory(models2json-mapper)
+add_subdirectory(models2row-mappers)
 add_subdirectory(repository)
-# add_subdirectory(db)
 add_subdirectory(handlers)
 
 add_executable(order_service main.cpp)
