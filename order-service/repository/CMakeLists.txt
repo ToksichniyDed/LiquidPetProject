@@ -1,21 +1,26 @@
-add_library(order_repository INTERFACE)
+find_package(libpqxx REQUIRED CONFIG)
 
-set(ORDER_REPOSITORY_HEADERS
-    IOrderRepository.h
+add_library(order_repository STATIC
+    PostgresOrderRepository.cpp
 )
 
-target_include_directories(order_repository INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-target_sources(order_repository INTERFACE
+target_sources(order_repository
+    PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
-    FILES ${ORDER_REPOSITORY_HEADERS}
+    FILES
+    IOrderRepository.h
+    PostgresOrderRepository.h
 )
 
-target_compile_features(order_repository INTERFACE cxx_std_23)
-target_link_libraries(order_repository INTERFACE order_models)
+target_compile_features(order_repository PUBLIC cxx_std_23)
+
+target_link_libraries(order_repository
+    PUBLIC
+    order_models
+    PRIVATE
+    libpqxx::pqxx
+)
 
 if(BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)

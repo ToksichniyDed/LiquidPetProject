@@ -23,6 +23,7 @@ if(BUILD_TESTING)
         tests/CurrencyTest.cpp
         tests/NetworkConfigurationTest.cpp
         tests/OrderTest.cpp
+        tests/DatabaseConfigurationTest.cpp
     )
 
     target_link_libraries(order_models_tests PRIVATE
