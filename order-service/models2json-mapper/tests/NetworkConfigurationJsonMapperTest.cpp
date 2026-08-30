@@ -1,13 +1,15 @@
 //
-// Created by DED on 25.08.2026.
+// Created by DED on 31.08.2026.
 //
 
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-#include "NetworkConfiguration.h"
+#include "mapper/NetworkConfigurationJsonMapper.h"
+#include <NetworkConfiguration.h>
 
 using namespace order_system::models;
+using namespace order_system::models2json_mapper;
 
 namespace {
     struct NetworkConfigurationTestCase {
@@ -17,15 +19,14 @@ namespace {
     };
 }
 
-class NetworkConfigurationFromJsonTest
+class NetworkConfigurationJsonMapperFromJsonTest
         : public ::testing::TestWithParam<NetworkConfigurationTestCase> {
 };
 
-TEST_P(NetworkConfigurationFromJsonTest, FromJson) {
+TEST_P(NetworkConfigurationJsonMapperFromJsonTest, FromJson) {
     const auto& testCase = GetParam();
 
-    const auto result =
-            order_system::models::NetworkConfiguration::fromJson(testCase.section);
+    const auto result = NetworkConfigurationJsonMapper::fromJson(testCase.section);
 
     if (testCase.expectSuccess) {
         ASSERT_TRUE(result.has_value());
@@ -38,8 +39,8 @@ TEST_P(NetworkConfigurationFromJsonTest, FromJson) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    NetworkConfigurationTests,
-    NetworkConfigurationFromJsonTest,
+    NetworkConfigurationJsonMapperTests,
+    NetworkConfigurationJsonMapperFromJsonTest,
     ::testing::Values(
         NetworkConfigurationTestCase{
         .testName = "ValidAddressAndPort",
@@ -64,6 +65,16 @@ INSTANTIATE_TEST_SUITE_P(
         NetworkConfigurationTestCase{
         .testName = "PortWrongType",
         .section = R"({"address": "0.0.0.0", "port": "8080"})"_json,
+        .expectSuccess = false
+        },
+        NetworkConfigurationTestCase{
+        .testName = "AddressWrongType",
+        .section = R"({"address": 12345, "port": 8080})"_json,
+        .expectSuccess = false
+        },
+        NetworkConfigurationTestCase{
+        .testName = "EmptyObject",
+        .section = R"({})"_json,
         .expectSuccess = false
         }
     ),

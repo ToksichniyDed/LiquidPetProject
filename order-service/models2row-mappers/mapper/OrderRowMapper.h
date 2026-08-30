@@ -8,8 +8,8 @@
 #include <expected>
 #include <pqxx/pqxx>
 
-#include <models/Order.h>
-#include <models2row-mappers/columns/OrderRowColumns.h>
+#include <Order.h>
+#include <columns/OrderRowColumns.h>
 
 namespace order_system::repository {
 
@@ -18,12 +18,15 @@ namespace order_system::repository {
 
     class OrderItemRowMapper {
     public:
-        static std::expected<OrderItem, std::error_code> fromRow(const pqxx::row& itemRow) {
+        static std::expected<OrderItem, std::error_code> fromRow(const pqxx::row_ref& itemRow) {
             return ProductId::create(itemRow[columns::ORDER_ITEM_PRODUCT_ID].as<std::string>())
                    .and_then([&itemRow](const ProductId& productId) {
                        return Currency::create(
                            itemRow[columns::ORDER_ITEM_PRICE_CURRENCY_CODE].as<std::string>(),
-                           itemRow[columns::ORDER_ITEM_PRICE_CURRENCY_MINOR_DIGITS].as<std::int8_t>()
+                           static_cast<std::int8_t>(
+                               itemRow[columns::ORDER_ITEM_PRICE_CURRENCY_MINOR_DIGITS]
+                               .as<std::int16_t>()
+                           )
                        ).transform([productId = std::move(productId)](Currency currency) mutable {
                            return std::pair{std::move(productId), std::move(currency)};
                        });

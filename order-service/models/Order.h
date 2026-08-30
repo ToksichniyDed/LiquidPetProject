@@ -169,35 +169,6 @@ namespace order_system::models {
     public:
         enum class OrderStatus { Created, Reserved, Shipped, Cancelled };
 
-        class OrderStatusMapper {
-        public:
-            static std::string toString(Order::OrderStatus status) {
-                switch (status) {
-                    case Order::OrderStatus::Created:
-                        return "Created";
-                    case Order::OrderStatus::Reserved:
-                        return "Reserved";
-                    case Order::OrderStatus::Shipped:
-                        return "Shipped";
-                    case Order::OrderStatus::Cancelled:
-                        return "Cancelled";
-                }
-                std::unreachable();
-            }
-
-            static std::expected<Order::OrderStatus, std::error_code> fromString(const std::string& value) {
-                if (value == "Created")
-                    return Order::OrderStatus::Created;
-                if (value == "Reserved")
-                    return Order::OrderStatus::Reserved;
-                if (value == "Shipped")
-                    return Order::OrderStatus::Shipped;
-                if (value == "Cancelled")
-                    return Order::OrderStatus::Cancelled;
-                return std::unexpected(OrderError::UnknownStatus);
-            }
-        };
-
     public:
         static std::expected<Order, std::error_code> create(UserId userId, std::vector<OrderItem> items) {
             if (items.empty())
@@ -245,6 +216,35 @@ namespace order_system::models {
         std::optional<OrderId> _orderId;
         std::vector<OrderItem> _items;
         OrderStatus _status;
+    };
+
+    class OrderStatusMapper {
+    public:
+        static std::string toString(Order::OrderStatus status) {
+            switch (status) {
+                case Order::OrderStatus::Created:
+                    return "Created";
+                case Order::OrderStatus::Reserved:
+                    return "Reserved";
+                case Order::OrderStatus::Shipped:
+                    return "Shipped";
+                case Order::OrderStatus::Cancelled:
+                    return "Cancelled";
+            }
+            std::unreachable();
+        }
+
+        static std::expected<Order::OrderStatus, std::error_code> fromString(const std::string& value) {
+            if (value == "Created")
+                return Order::OrderStatus::Created;
+            if (value == "Reserved")
+                return Order::OrderStatus::Reserved;
+            if (value == "Shipped")
+                return Order::OrderStatus::Shipped;
+            if (value == "Cancelled")
+                return Order::OrderStatus::Cancelled;
+            return std::unexpected(OrderError::UnknownStatus);
+        }
     };
 }
 
