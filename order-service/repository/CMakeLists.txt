@@ -19,6 +19,8 @@ target_link_libraries(order_repository
     PUBLIC
     order_models
     PRIVATE
+    order_models2row_mapper
+    shared
     libpqxx::pqxx
 )
 

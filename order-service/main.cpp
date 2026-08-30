@@ -13,6 +13,9 @@
 #include "CQRS/CreateOrderHandler.h"
 #include "CQRS/GetOrderHandler.h"
 #include "CQRS/HealthHandler.h"
+#include <repository/PostgresOrderRepository.h>
+#include "mapper/NetworkConfigurationJsonMapper.h"
+#include "mapper/DatabaseConfigurationJsonMapper.h"
 
 int main(const int argc, char* argv[]) {
 
@@ -23,22 +26,43 @@ int main(const int argc, char* argv[]) {
 
     std::filesystem::path configPath{argv[1]};
 
+    const char* dbPassword = std::getenv("DB_PASSWORD");
+    if (!dbPassword) {
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "DB_PASSWORD environment variable is not set");
+        return 1;
+    }
+
     auto networkSection = Json::JsonHelper::loadSection(configPath, "network");
     if (!networkSection.has_value()) {
         std::cerr << "Error "<< networkSection.error().category().name()<< ": " << networkSection.error().message() << '\n';
         return 1;
     }
+    auto databaseSection = Json::JsonHelper::loadSection(configPath, "database");
+    if (!databaseSection.has_value()) {
+        std::cerr << "Error " << databaseSection.error().category().name() << ": " << databaseSection.error().message()
+                << '\n';
+        return 1;
+    }
 
-    auto networkConfiguration = order_system::models::NetworkConfiguration::fromJson(networkSection.value());
+    auto networkConfiguration = order_system::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
+        networkSection.value());
     if (!networkConfiguration.has_value()) {
         std::cerr << "Error "<< networkConfiguration.error().category().name()<< ": " << networkConfiguration.error().message() << '\n';
         return 1;
     }
 
-    Logger::init(true, false, spdlog::level::level_enum::debug, {},1024, 0);
+    auto databaseConfiguration = order_system::models2json_mapper::DatabaseConfigurationJsonMapper::fromJson(
+        databaseSection.value(), dbPassword);
+    if (!databaseConfiguration.has_value()) {
+        std::cerr << "Error " << databaseConfiguration.error().category().name() << ": " << databaseConfiguration.
+                error().message() << '\n';
+        return 1;
+    }
 
-    // TODO: пока nullptr, c проверками заморачиваться не стал
-    std::shared_ptr<order_system::repository::IOrderRepository> repository;
+    Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
+
+    std::shared_ptr<order_system::repository::IOrderRepository> repository = std::make_shared<
+        order_system::repository::PostgresOrderRepository>(databaseConfiguration.value());
 
     std::vector<order_service::handlers::Route> routes{
         {
