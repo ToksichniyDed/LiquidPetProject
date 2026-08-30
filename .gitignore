@@ -5,3 +5,6 @@ cmake-build-*/
 *.log
 .conan2/
 .idea/
+.env
+*.env
+!.env.example
