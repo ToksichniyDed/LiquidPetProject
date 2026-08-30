@@ -20,6 +20,8 @@ if (BUILD_TESTING)
         tests/MoneyJsonMapperTest.cpp
         tests/CurrencyJsonMapperTest.cpp
         tests/OrderJsonMapperTest.cpp
+        tests/NetworkConfigurationJsonMapperTest.cpp
+        tests/DatabaseConfigurationJsonMapperTest.cpp
     )
 
     target_link_libraries(order_models2json_mapper_tests PUBLIC

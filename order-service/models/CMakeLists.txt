@@ -21,7 +21,6 @@ if(BUILD_TESTING)
     add_executable(order_models_tests
         tests/MoneyTest.cpp
         tests/CurrencyTest.cpp
-        tests/NetworkConfigurationTest.cpp
         tests/OrderTest.cpp
         tests/DatabaseConfigurationTest.cpp
     )
