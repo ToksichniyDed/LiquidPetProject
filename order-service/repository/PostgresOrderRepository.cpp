@@ -16,8 +16,7 @@ namespace order_system::repository {
 
     class PostgresOrderRepository::Impl {
     public:
-        explicit Impl(const DatabaseConfiguration& config) {
-            _connection = pqxx::connection(config.toConnectionString());
+        explicit Impl(const DatabaseConfiguration& config) : _connection(config.toConnectionString()) {
 
             _connection.prepare(INSERT_ORDER, INSERT_ORDER_SQL);
             _connection.prepare(INSERT_ORDER_ITEM, INSERT_ORDER_ITEM_SQL);
