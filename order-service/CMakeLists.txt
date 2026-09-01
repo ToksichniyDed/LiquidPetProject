@@ -6,7 +6,7 @@ add_subdirectory(handlers)
 
 add_executable(order_service main.cpp)
 
-target_include_directories(order_service PUBLIC
+target_include_directories(order_service PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

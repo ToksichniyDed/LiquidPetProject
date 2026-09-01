@@ -9,7 +9,9 @@ target_include_directories(order_models2row_mapper PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(order_models2row_mapper PRIVATE
+target_link_libraries(order_models2row_mapper
+    PUBLIC
     order_models
+    PRIVATE
     libpqxx::pqxx
 )

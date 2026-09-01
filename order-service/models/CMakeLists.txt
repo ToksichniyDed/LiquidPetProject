@@ -7,11 +7,9 @@ target_include_directories(order_models INTERFACE
 target_compile_features(order_models INTERFACE cxx_std_23)
 
 find_package(Boost REQUIRED CONFIG)
-find_package(nlohmann_json REQUIRED CONFIG)
 target_link_libraries(order_models INTERFACE
     shared
     Boost::headers
-    nlohmann_json::nlohmann_json
 )
 
 if(BUILD_TESTING)
