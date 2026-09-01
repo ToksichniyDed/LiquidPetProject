@@ -23,11 +23,13 @@ target_include_directories(order_handlers PUBLIC
 
 find_package(Boost REQUIRED CONFIG)
 
-target_link_libraries(order_handlers PRIVATE
+target_link_libraries(order_handlers
+    PUBLIC
     order_models
     order_models2json_mapper
     order_repository
     shared
+    PRIVATE
     Boost::headers
 )
 
