@@ -26,16 +26,19 @@ namespace order_service::handlers {
             }
 
             auto orderResult = _orderRepository->findById(orderIdResult.value());
-            if (orderResult.error() == RepositoryError::NotFound) {
+            if (!orderResult) {
+                if (orderResult.error() == RepositoryError::NotFound) {
+                    return {
+                        .status = Http::Status::NotFound,
+                        .body = orderResult.error().message()
+                    };
+                }
+
                 return {
-                    .status = Http::Status::NotFound,
+                    .status = Http::Status::InternalServerError,
                     .body = orderResult.error().message()
                 };
             }
-            return {
-                .status = Http::Status::InternalServerError,
-                .body = orderResult.error().message()
-            };
 
 
             return {

@@ -4,10 +4,10 @@
     "port": 8080
   },
   "database": {
-    "host": "postgres",
+    "host": "localhost",
     "port": 5432,
     "databaseName": "orders",
-    "user": "orders_user",
+    "user": "orders",
     "useSsl": false
   }
 }
