@@ -5,7 +5,7 @@
 #ifndef LIQUIDPETPROJECT_HEALTHHANDLER_H
 #define LIQUIDPETPROJECT_HEALTHHANDLER_H
 
-#include <handlers/IRequestHandler.h>
+#include <http/IRequestHandler.h>
 
 namespace order_service::handlers {
     class HealthHandler : public IRequestHandler {

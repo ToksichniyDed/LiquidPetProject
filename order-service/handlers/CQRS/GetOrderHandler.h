@@ -5,9 +5,8 @@
 #ifndef LIQUIDPETPROJECT_GETORDERHANDLER_H
 #define LIQUIDPETPROJECT_GETORDERHANDLER_H
 
-#include <handlers/IRequestHandler.h>
-#include <repository/IOrderRepository.h>
-#include <handlers/RoutePaths.h>
+#include <http/IRequestHandler.h>
+#include "IOrderRepository.h"
 
 namespace order_service::handlers {
     class GetOrderHandler : public IRequestHandler {

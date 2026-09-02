@@ -5,17 +5,17 @@
 #include <filesystem>
 #include <iostream>
 
-#include <json/Json.h>
-#include <models/NetworkConfiguration.h>
-#include <handlers/HttpServer.h>
-#include <handlers/RoutePaths.h>
+#include <http/NetworkConfiguration.h>
+#include <http/Route.h>
+#include <http/HttpServer.h>
+#include "handlers/RoutePaths.h"
 #include <logging/Logger.h>
-#include "CQRS/CreateOrderHandler.h"
-#include "CQRS/GetOrderHandler.h"
-#include "CQRS/HealthHandler.h"
-#include <repository/PostgresOrderRepository.h>
-#include "mapper/NetworkConfigurationJsonMapper.h"
-#include "mapper/DatabaseConfigurationJsonMapper.h"
+#include <CQRS/CreateOrderHandler.h>
+#include <CQRS/GetOrderHandler.h>
+#include <CQRS/HealthHandler.h>
+#include "PostgresOrderRepository.h"
+#include <mapper/NetworkConfigurationJsonMapper.h>
+#include <mapper/DatabaseConfigurationJsonMapper.h>
 
 int main(const int argc, char* argv[]) {
 
@@ -34,35 +34,46 @@ int main(const int argc, char* argv[]) {
 
     auto networkSection = Json::JsonHelper::loadSection(configPath, "network");
     if (!networkSection.has_value()) {
-        std::cerr << "Error "<< networkSection.error().category().name()<< ": " << networkSection.error().message() << '\n';
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error {} : {} \n", networkSection.error().category().name(),
+                               networkSection.error().message());
         return 1;
     }
     auto databaseSection = Json::JsonHelper::loadSection(configPath, "database");
     if (!databaseSection.has_value()) {
-        std::cerr << "Error " << databaseSection.error().category().name() << ": " << databaseSection.error().message()
-                << '\n';
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error {} : {} \n", databaseSection.error().category().name(),
+                               databaseSection.error().message());
         return 1;
     }
 
     auto networkConfiguration = order_system::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
         networkSection.value());
     if (!networkConfiguration.has_value()) {
-        std::cerr << "Error "<< networkConfiguration.error().category().name()<< ": " << networkConfiguration.error().message() << '\n';
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error {} : {} \n", networkConfiguration.error().category().name(),
+                               networkConfiguration.error().message());
         return 1;
     }
 
     auto databaseConfiguration = order_system::models2json_mapper::DatabaseConfigurationJsonMapper::fromJson(
         databaseSection.value(), dbPassword);
     if (!databaseConfiguration.has_value()) {
-        std::cerr << "Error " << databaseConfiguration.error().category().name() << ": " << databaseConfiguration.
-                error().message() << '\n';
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error {} : {} \n", databaseConfiguration.error().category().name(),
+                               databaseConfiguration.
+                               error().message());
         return 1;
     }
 
     Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
 
-    std::shared_ptr<order_system::repository::IOrderRepository> repository = std::make_shared<
-        order_system::repository::PostgresOrderRepository>(databaseConfiguration.value());
+    std::shared_ptr<order_system::repository::IOrderRepository> repository;
+    try {
+        repository = std::make_shared<
+            order_system::repository::PostgresOrderRepository>(databaseConfiguration.value());
+    } catch (const std::exception& e) {
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error: {} \n", e.what());
+        return 1;
+
+    }
+
 
     std::vector<order_service::handlers::Route> routes{
         {

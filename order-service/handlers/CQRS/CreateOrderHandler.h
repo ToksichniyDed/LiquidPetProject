@@ -5,9 +5,9 @@
 #ifndef LIQUIDPETPROJECT_CREATEORDERHANDLER_H
 #define LIQUIDPETPROJECT_CREATEORDERHANDLER_H
 
-#include <handlers/IRequestHandler.h>
-#include <repository/IOrderRepository.h>
-#include <models2json-mapper/mapper/OrderJsonMapper.h>
+#include <http/IRequestHandler.h>
+#include "IOrderRepository.h"
+#include <mapper/OrderJsonMapper.h>
 
 namespace order_service::handlers {
     using namespace order_system::models;

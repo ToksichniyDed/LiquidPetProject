@@ -5,10 +5,9 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/core.hpp>
 
+#include "HttpMessageConverter.h"
 #include "HttpServer.h"
 #include <logging/Logger.h>
-
-#include "HttpMessageConverter.h"
 
 namespace order_service::handlers {
 

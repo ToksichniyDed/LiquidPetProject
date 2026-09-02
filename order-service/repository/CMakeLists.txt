@@ -4,13 +4,8 @@ add_library(order_repository STATIC
     PostgresOrderRepository.cpp
 )
 
-target_sources(order_repository
-    PUBLIC
-    FILE_SET HEADERS
-    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
-    FILES
-    IOrderRepository.h
-    PostgresOrderRepository.h
+target_include_directories(order_models INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_compile_features(order_repository PUBLIC cxx_std_23)
@@ -20,7 +15,9 @@ target_link_libraries(order_repository
     order_models
     PRIVATE
     order_models2row_mapper
-    shared
+    shared_json
+    shared_logging
+    shared_include_paths
     libpqxx::pqxx
 )
 

@@ -4,7 +4,7 @@
 
 #include <fstream>
 
-#include <json/Json.h>
+#include "Json.h"
 
 std::expected<nlohmann::json, std::error_code> Json::JsonHelper::loadSection(const std::filesystem::path& path,
                                                                              const std::string& section) {

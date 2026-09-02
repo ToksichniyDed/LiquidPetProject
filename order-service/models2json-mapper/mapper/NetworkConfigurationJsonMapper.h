@@ -5,7 +5,8 @@
 #ifndef LIQUIDPETPROJECT_NETWORKJSONMAPPER_H
 #define LIQUIDPETPROJECT_NETWORKJSONMAPPER_H
 
-#include "NetworkConfiguration.h"
+#include <json/Json.h>
+#include <http/NetworkConfiguration.h>
 #include <keys/NetworkConfigurationJsonKeys.h>
 
 namespace order_system::models2json_mapper {

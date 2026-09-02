@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include "mapper/NetworkConfigurationJsonMapper.h"
-#include <NetworkConfiguration.h>
+#include <http/NetworkConfiguration.h>
 
 using namespace order_system::models;
 using namespace order_system::models2json_mapper;
