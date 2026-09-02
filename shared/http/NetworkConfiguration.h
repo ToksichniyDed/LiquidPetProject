@@ -5,12 +5,7 @@
 #ifndef LIQUIDPETPROJECT_NETWORKCONFIGURATION_H
 #define LIQUIDPETPROJECT_NETWORKCONFIGURATION_H
 
-#include <expected>
-
-#include <nlohmann/json.hpp>
-
-#include <NetworkAddress.h>
-#include <json/Json.h>
+#include "NetworkAddress.h"
 
 namespace order_system::models {
     struct NetworkConfiguration {

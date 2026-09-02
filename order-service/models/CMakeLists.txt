@@ -8,7 +8,6 @@ target_compile_features(order_models INTERFACE cxx_std_23)
 
 find_package(Boost REQUIRED CONFIG)
 target_link_libraries(order_models INTERFACE
-    shared
     Boost::headers
 )
 

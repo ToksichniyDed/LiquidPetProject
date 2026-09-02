@@ -1,38 +1,6 @@
-set(SHARED_PUBLIC_HEADERS
-    include/logging/Logger.h
-    include/json/Json.h
-    include/http/HttpMessage.h
-)
+add_library(shared_include_paths INTERFACE)
+target_include_directories(shared_include_paths INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SHARED_SOURCES
-    src/logging/Logger.cpp
-    src/json/Json.cpp
-)
-
-add_library(shared STATIC ${SHARED_SOURCES})
-
-target_sources(shared PUBLIC
-    FILE_SET HEADERS
-    BASE_DIRS include
-    FILES ${SHARED_PUBLIC_HEADERS}
-)
-
-find_package(spdlog REQUIRED CONFIG)
-find_package(nlohmann_json REQUIRED CONFIG)
-target_link_libraries(shared PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json)
-
-if(BUILD_TESTING)
-    find_package(GTest REQUIRED CONFIG)
-
-    add_executable(order_shared_tests
-        src/json/tests/JsonHelperTest.cpp
-    )
-
-    target_link_libraries(order_shared_tests PRIVATE
-        shared
-        GTest::gtest_main
-    )
-
-    include(GoogleTest)
-    gtest_discover_tests(order_shared_tests)
-endif()
+add_subdirectory(logging)
+add_subdirectory(json)
+add_subdirectory(http)

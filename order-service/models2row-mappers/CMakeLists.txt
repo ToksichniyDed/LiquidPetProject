@@ -1,17 +1,14 @@
 find_package(libpqxx REQUIRED CONFIG)
 
-add_library(order_models2row_mapper STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/mapper
-    ${CMAKE_CURRENT_SOURCE_DIR}/columns
+add_library(order_models2row_mapper INTERFACE
 )
 
-target_include_directories(order_models2row_mapper PUBLIC
+target_include_directories(order_models2row_mapper INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(order_models2row_mapper
-    PUBLIC
+    INTERFACE
     order_models
-    PRIVATE
     libpqxx::pqxx
 )

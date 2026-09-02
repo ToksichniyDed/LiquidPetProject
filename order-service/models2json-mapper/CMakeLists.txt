@@ -1,16 +1,13 @@
-add_library(order_models2json_mapper STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/mapper
-    ${CMAKE_CURRENT_SOURCE_DIR}/keys
+add_library(order_models2json_mapper INTERFACE
 )
 
-target_include_directories(order_models2json_mapper PUBLIC
+target_include_directories(order_models2json_mapper INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(order_models2json_mapper PUBLIC
+target_link_libraries(order_models2json_mapper INTERFACE
     order_models
-    PRIVATE
-    shared
+    shared_json
 )
 
 if (BUILD_TESTING)
@@ -28,7 +25,7 @@ if (BUILD_TESTING)
         order_models
         PRIVATE
         order_models2json_mapper
-        shared
+        shared_json
         GTest::gtest_main
     )
 

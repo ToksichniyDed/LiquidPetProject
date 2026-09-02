@@ -4,10 +4,12 @@
 
 #include <pqxx/pqxx>
 
-#include <logging/Logger.h>
 #include "PostgresOrderRepository.h"
 #include "OrderRepositoryQueries.h"
 #include "mapper/OrderRowMapper.h"
+
+#include <json/Json.h>
+#include <logging/Logger.h>
 
 namespace order_system::repository {
     using namespace order_system::models;
