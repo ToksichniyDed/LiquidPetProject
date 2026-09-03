@@ -33,31 +33,51 @@ namespace shared::http {
 
     void HttpServer::run() {
         SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server run successfully!");
-        accept();
+
+        doAccept();
+        _ioContext.run();
     }
 
-    void HttpServer::accept() {
-        while (true) {
-            tcp::socket socket(_ioContext);
-            _acceptor.accept(socket);
-            handleConnection(std::move(socket));
-        }
+    void HttpServer::stop() {
+        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server stop requested!");
+
+        boost::system::error_code ec;
+        _acceptor.close(ec);
+        _ioContext.stop();
     }
 
-    void HttpServer::handleConnection(boost::asio::ip::tcp::socket socket) const {
-        beast::error_code ec;
-        beast::flat_buffer buffer;
-        beast_http::request<beast_http::string_body> request;
-        beast_http::read(socket, buffer, request, ec);
+    void HttpServer::doAccept() {
+        auto socket = std::make_shared<tcp::socket>(_ioContext);
 
-        if (ec) {
-            return;
-        }
+        _acceptor.async_accept(*socket, [this, socket](const beast::error_code& ec) {
+            if (!ec) {
+                handleConnection(socket);
+            }
 
-        beast_http::response<beast_http::string_body> response = handleRequest(request);
+            if (_acceptor.is_open()) {
+                doAccept();
+            }
+        });
+    }
 
-        beast_http::write(socket, response, ec);
-        socket.shutdown(tcp::socket::shutdown_send, ec);
+    void HttpServer::handleConnection(std::shared_ptr<tcp::socket> socket) const {
+        auto buffer = std::make_shared<beast::flat_buffer>();
+        auto request = std::make_shared<beast_http::request<beast_http::string_body>>();
+
+        beast_http::async_read(*socket, *buffer, *request,
+                               [this, socket, buffer, request](const beast::error_code& ec, std::size_t) {
+                                   if (ec)
+                                       return;
+
+                                   auto response = std::make_shared<beast_http::response<beast_http::string_body>>(
+                                       handleRequest(*request));
+
+                                   beast_http::async_write(*socket, *response,
+                                                           [socket, response](const beast::error_code&, std::size_t) {
+                                                               boost::system::error_code shutdownEc;
+                                                               socket->shutdown(tcp::socket::shutdown_send, shutdownEc);
+                                                           });
+                               });
     }
 
     beast_http::response<beast_http::string_body> HttpServer::handleRequest(
