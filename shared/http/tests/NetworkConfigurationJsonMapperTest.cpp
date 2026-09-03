@@ -5,11 +5,9 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-#include "mapper/NetworkConfigurationJsonMapper.h"
-#include <http/NetworkConfiguration.h>
+#include "../NetworkConfigurationJsonMapper.h"
+#include "../NetworkConfiguration.h"
 
-using namespace order_system::models;
-using namespace order_system::models2json_mapper;
 
 namespace {
     struct NetworkConfigurationTestCase {
@@ -26,7 +24,7 @@ class NetworkConfigurationJsonMapperFromJsonTest
 TEST_P(NetworkConfigurationJsonMapperFromJsonTest, FromJson) {
     const auto& testCase = GetParam();
 
-    const auto result = NetworkConfigurationJsonMapper::fromJson(testCase.section);
+    const auto result = shared::http::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(testCase.section);
 
     if (testCase.expectSuccess) {
         ASSERT_TRUE(result.has_value());

@@ -11,27 +11,26 @@
 #include "NetworkConfiguration.h"
 #include "Route.h"
 
-namespace order_service::handlers {
-    using namespace boost::beast;
-
+namespace shared::http {
     class HttpServer {
         public:
-        explicit HttpServer(order_system::models::NetworkConfiguration config, std::vector<Route> handlers);
+        explicit HttpServer(models::NetworkConfiguration config, std::vector<handlers::Route> handlers);
 
         [[noreturn]] void run();
 
     private:
         [[noreturn]] void accept();
         void handleConnection(boost::asio::ip::tcp::socket socket) const;
-        http::response<http::string_body> handleRequest(const http::request<http::string_body>& beastRequest) const;
-        std::shared_ptr<IRequestHandler> findHandler(Http::Method method, std::string_view path) const;
+        boost::beast::http::response<boost::beast::http::string_body> handleRequest(
+            const boost::beast::http::request<boost::beast::http::string_body>& beastRequest) const;
+        std::shared_ptr<IRequestHandler> findHandler(Method method, std::string_view path) const;
 
     private:
-        order_system::models::NetworkConfiguration _networkConfiguration;
+        models::NetworkConfiguration _networkConfiguration;
         boost::asio::io_context _ioContext;
         boost::asio::ip::tcp::acceptor _acceptor;
 
-        std::vector<Route> _handlers;
+        std::vector<handlers::Route> _handlers;
     };
 
 }

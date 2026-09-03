@@ -14,7 +14,7 @@
 #include <CQRS/GetOrderHandler.h>
 #include <CQRS/HealthHandler.h>
 #include "PostgresOrderRepository.h"
-#include <mapper/NetworkConfigurationJsonMapper.h>
+#include <http/NetworkConfigurationJsonMapper.h>
 #include <mapper/DatabaseConfigurationJsonMapper.h>
 
 int main(const int argc, char* argv[]) {
@@ -23,6 +23,8 @@ int main(const int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " <config file>" << '\n';
         return 1;
     }
+
+    Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
 
     std::filesystem::path configPath{argv[1]};
 
@@ -45,7 +47,7 @@ int main(const int argc, char* argv[]) {
         return 1;
     }
 
-    auto networkConfiguration = order_system::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
+    auto networkConfiguration = shared::http::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
         networkSection.value());
     if (!networkConfiguration.has_value()) {
         SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error {} : {} \n", networkConfiguration.error().category().name(),
@@ -62,8 +64,6 @@ int main(const int argc, char* argv[]) {
         return 1;
     }
 
-    Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
-
     std::shared_ptr<order_system::repository::IOrderRepository> repository;
     try {
         repository = std::make_shared<
@@ -75,19 +75,19 @@ int main(const int argc, char* argv[]) {
     }
 
 
-    std::vector<order_service::handlers::Route> routes{
+    std::vector<shared::http::handlers::Route> routes{
         {
-            .method = Http::Method::Post,
+            .method = shared::http::Method::Post,
             .pathPrefix = order_service::handlers::paths::ORDERS,
             .handler = std::make_shared<order_service::handlers::CreateOrderHandler>(repository)
         },
         {
-            .method = Http::Method::Get,
+            .method = shared::http::Method::Get,
             .pathPrefix = order_service::handlers::paths::ORDERS_PREFIX,
             .handler = std::make_shared<order_service::handlers::GetOrderHandler>(repository)
         },
         {
-            .method = Http::Method::Get,
+            .method = shared::http::Method::Get,
             .pathPrefix = order_service::handlers::paths::HEALTH,
             .handler = std::make_shared<order_service::handlers::HealthHandler>()
         },

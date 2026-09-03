@@ -9,22 +9,22 @@
 #include "HttpServer.h"
 #include <logging/Logger.h>
 
-namespace order_service::handlers {
+namespace shared::http {
 
     namespace beast = boost::beast;
-    namespace http = beast::http;
+    namespace beast_http = beast::http;
     using tcp = boost::asio::ip::tcp;
 
     HttpServer::HttpServer(
-        order_system::models::NetworkConfiguration config,
-        std::vector<Route> handlers) : _networkConfiguration(std::move(config)),
-                                       _ioContext(1),
-                                       _acceptor(_ioContext, tcp::endpoint(
-                                                     boost::asio::ip::make_address(
-                                                         _networkConfiguration.address.
-                                                                               value()),
-                                                     _networkConfiguration.port)),
-                                       _handlers(std::move(handlers)) {
+        models::NetworkConfiguration config,
+        std::vector<handlers::Route> handlers) : _networkConfiguration(std::move(config)),
+                                                 _ioContext(1),
+                                                 _acceptor(_ioContext, tcp::endpoint(
+                                                               boost::asio::ip::make_address(
+                                                                   _networkConfiguration.address.
+                                                                   value()),
+                                                               _networkConfiguration.port)),
+                                                 _handlers(std::move(handlers)) {
 
         SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server created successfully!");
         SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server address : {}", _networkConfiguration.address.value());
@@ -47,28 +47,28 @@ namespace order_service::handlers {
     void HttpServer::handleConnection(boost::asio::ip::tcp::socket socket) const {
         beast::error_code ec;
         beast::flat_buffer buffer;
-        http::request<http::string_body> request;
-        http::read(socket, buffer, request, ec);
+        beast_http::request<beast_http::string_body> request;
+        beast_http::read(socket, buffer, request, ec);
 
         if (ec) {
             return;
         }
 
-        http::response<http::string_body> response = handleRequest(request);
+        beast_http::response<beast_http::string_body> response = handleRequest(request);
 
-        http::write(socket, response, ec);
+        beast_http::write(socket, response, ec);
         socket.shutdown(tcp::socket::shutdown_send, ec);
     }
 
-    http::response<http::string_body> HttpServer::handleRequest(
-        const http::request<http::string_body>& beastRequest) const {
+    beast_http::response<beast_http::string_body> HttpServer::handleRequest(
+        const beast_http::request<beast_http::string_body>& beastRequest) const {
 
         const auto request = HttpMessageConverter::toHttpRequest(beastRequest);
         const auto handler = findHandler(request.method, request.path);
 
-        Http::Response response;
+        Response response;
         if (!handler) {
-            response.status = Http::Status::NotFound;
+            response.status = Status::NotFound;
             return HttpMessageConverter::toBeastResponse(response);
         }
 
@@ -77,7 +77,7 @@ namespace order_service::handlers {
         return HttpMessageConverter::toBeastResponse(response);
     }
 
-    std::shared_ptr<IRequestHandler> HttpServer::findHandler(Http::Method method, std::string_view path) const {
+    std::shared_ptr<IRequestHandler> HttpServer::findHandler(Method method, std::string_view path) const {
         for (const auto& [srcMethod, srcPathPrefix, srcHandler] : _handlers) {
             if (srcMethod == method && path.starts_with(srcPathPrefix))
                 return srcHandler;

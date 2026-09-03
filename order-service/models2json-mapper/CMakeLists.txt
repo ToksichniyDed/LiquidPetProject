@@ -1,6 +1,18 @@
 add_library(order_models2json_mapper INTERFACE
 )
 
+target_sources(order_models2json_mapper INTERFACE
+    keys/CurrencyJsonKeys.h
+    keys/DatabaseConfigurationJsonKeys.h
+    keys/MoneyJsonKeys.h
+    keys/OrderJsonKeys.h
+
+    mapper/CurrencyJsonMapper.h
+    mapper/DatabaseConfigurationJsonMapper.h
+    mapper/MoneyJsonMapper.h
+    mapper/OrderJsonMapper.h
+)
+
 target_include_directories(order_models2json_mapper INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -17,7 +29,6 @@ if (BUILD_TESTING)
         tests/MoneyJsonMapperTest.cpp
         tests/CurrencyJsonMapperTest.cpp
         tests/OrderJsonMapperTest.cpp
-        tests/NetworkConfigurationJsonMapperTest.cpp
         tests/DatabaseConfigurationJsonMapperTest.cpp
     )
 

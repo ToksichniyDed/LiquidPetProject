@@ -6,29 +6,64 @@
 
 #include <utility>
 
-namespace order_service::handlers {
-    Http::Request HttpMessageConverter::toHttpRequest(const http::request<http::string_body>& request) {
+namespace shared::http {
+    Request HttpMessageConverter::toHttpRequest(
+        const boost::beast::http::request<boost::beast::http::string_body>& request) {
         const auto method = toHttpMethod(request.method());
 
         return {.method=method, .path=std::string(request.target()),.body=request.body()};
     }
 
-    http::response<http::string_body> HttpMessageConverter::toBeastResponse(const Http::Response& response) {
-        http::response<http::string_body> beastResponse;
+    boost::beast::http::response<boost::beast::http::string_body> HttpMessageConverter::toBeastResponse(
+        const Response& response) {
+        boost::beast::http::response<boost::beast::http::string_body> beastResponse;
 
-        beastResponse.result(static_cast<http::status>(std::to_underlying(response.status)));
+        beastResponse.result(static_cast<boost::beast::http::status>(std::to_underlying(response.status)));
         beastResponse.body() = response.body;
         beastResponse.prepare_payload();
 
         return beastResponse;
     }
 
-    Http::Method HttpMessageConverter::toHttpMethod(const http::verb verb) {
+    boost::beast::http::request<boost::beast::http::string_body> HttpMessageConverter::toBeastRequest(
+        const Request& request) {
+        boost::beast::http::request<boost::beast::http::string_body> beastRequest;
+
+        beastRequest.method(toVerb(request.method));
+        beastRequest.target(request.path);
+        beastRequest.body() = request.body;
+        beastRequest.set(boost::beast::http::field::content_type, "application/json");
+        beastRequest.prepare_payload();
+
+        return beastRequest;
+    }
+
+    Response HttpMessageConverter::toHttpResponse(const boost::beast::http::response<boost::beast::http::string_body>& response) {
+
+        return {
+            .status = static_cast<Status>(response.result_int()),
+            .body = response.body()
+        };
+    }
+
+    boost::beast::http::verb HttpMessageConverter::toVerb(Method method) {
+        switch (method) {
+                using enum Method;
+            case Get:
+                return boost::beast::http::verb::get;
+            case Post:
+                return boost::beast::http::verb::post;
+            default:
+                return boost::beast::http::verb::unknown;
+        }
+    }
+
+    Method HttpMessageConverter::toHttpMethod(const boost::beast::http::verb verb) {
         switch (verb) {
-            using enum Http::Method;
-            case http::verb::get:
+                using enum Method;
+            case boost::beast::http::verb::get:
                 return Get;
-            case http::verb::post:
+            case boost::beast::http::verb::post:
                 return Post;
             default:
                 return Unknown;

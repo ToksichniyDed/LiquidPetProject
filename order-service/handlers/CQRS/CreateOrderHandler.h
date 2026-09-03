@@ -10,6 +10,7 @@
 #include <mapper/OrderJsonMapper.h>
 
 namespace order_service::handlers {
+    using namespace shared::http;
     using namespace order_system::models;
     using namespace order_system::repository;
     using namespace order_system::models2json_mapper;
@@ -20,26 +21,26 @@ namespace order_service::handlers {
             orderRepository) {
         };
 
-        Http::Response handle(const Http::Request& request) override {
+        Response handle(const Request& request) override {
             nlohmann::json bodyJson;
             try {
                 bodyJson = nlohmann::json::parse(request.body);
             } catch (const nlohmann::json::parse_error&) {
-                return {.status = Http::Status::BadRequest, .body = bodyJson.dump()};
+                return {.status = Status::BadRequest, .body = bodyJson.dump()};
             }
 
             auto orderResult = OrderJsonMapper::fromJson(bodyJson);
             if (!orderResult.has_value())
-                return {.status = Http::Status::BadRequest, .body = orderResult.error().message()};
+                return {.status = Status::BadRequest, .body = orderResult.error().message()};
 
             Order order = std::move(orderResult.value());
 
             auto saveResult = _orderRepository->save(order);
 
             if (!saveResult.has_value())
-                return {.status = Http::Status::InternalServerError, .body = orderResult.error().message()};
+                return {.status = Status::InternalServerError, .body = orderResult.error().message()};
 
-            return {.status = Http::Status::Ok, .body = {}};
+            return {.status = Status::Ok, .body = {}};
         };
 
     private:

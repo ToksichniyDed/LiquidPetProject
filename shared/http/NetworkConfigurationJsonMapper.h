@@ -6,11 +6,11 @@
 #define LIQUIDPETPROJECT_NETWORKJSONMAPPER_H
 
 #include <json/Json.h>
-#include <http/NetworkConfiguration.h>
-#include <keys/NetworkConfigurationJsonKeys.h>
+#include "NetworkConfiguration.h"
+#include "NetworkConfigurationJsonKeys.h"
 
-namespace order_system::models2json_mapper {
-    using namespace order_system::models;
+namespace shared::http::models2json_mapper {
+    using namespace shared::http::models;
     using namespace Json;
     using namespace models2json_mapper::keys;
 

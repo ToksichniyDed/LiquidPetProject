@@ -5,9 +5,10 @@
 #ifndef LIQUIDPETPROJECT_HTTPMESSAGE_H
 #define LIQUIDPETPROJECT_HTTPMESSAGE_H
 
+#include <cstdint>
 #include <string>
 
-namespace Http {
+namespace shared::http {
     enum class Method : std::uint8_t {
         Get,
         Post,
@@ -21,7 +22,8 @@ namespace Http {
         NotFound = 404,
         MethodNotAllowed = 405,
         IAmATeaPot = 418,
-        InternalServerError = 500
+        InternalServerError = 500,
+        BadGateway = 502
     };
 
     struct Request {
