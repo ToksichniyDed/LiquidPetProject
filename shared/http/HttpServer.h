@@ -16,11 +16,12 @@ namespace shared::http {
         public:
         explicit HttpServer(models::NetworkConfiguration config, std::vector<handlers::Route> handlers);
 
-        [[noreturn]] void run();
+        void run();
+        void stop();
 
     private:
-        [[noreturn]] void accept();
-        void handleConnection(boost::asio::ip::tcp::socket socket) const;
+        void doAccept();
+        void handleConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket) const;
         boost::beast::http::response<boost::beast::http::string_body> handleRequest(
             const boost::beast::http::request<boost::beast::http::string_body>& beastRequest) const;
         std::shared_ptr<IRequestHandler> findHandler(Method method, std::string_view path) const;

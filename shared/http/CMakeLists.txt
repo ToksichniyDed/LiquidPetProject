@@ -20,12 +20,14 @@ if (BUILD_TESTING)
     add_executable(shared_http_models2json_mapper_tests
         tests/NetworkConfigurationJsonMapperTest.cpp
         tests/HttpMessageConverterTest.cpp
+        tests/HttpServerTest.cpp
     )
 
     target_link_libraries(shared_http_models2json_mapper_tests
         PRIVATE
         shared_http
         shared_json
+        shared_logging
         Boost::headers
         GTest::gtest_main
     )
