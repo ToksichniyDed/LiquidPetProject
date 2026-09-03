@@ -19,6 +19,7 @@ if (BUILD_TESTING)
 
     add_executable(shared_http_models2json_mapper_tests
         tests/NetworkConfigurationJsonMapperTest.cpp
+        tests/HttpMessageConverterTest.cpp
     )
 
     target_link_libraries(shared_http_models2json_mapper_tests
