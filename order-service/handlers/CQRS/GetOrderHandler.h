@@ -16,32 +16,32 @@ namespace order_service::handlers {
             orderRepository) {
         };
 
-        Http::Response handle(const Http::Request& request) override {
+        Response handle(const Request& request) override {
             auto id = request.path.substr(paths::ORDERS_PREFIX.size());
 
             auto orderIdResult = OrderId::create(id);
             if (!orderIdResult.has_value()) {
-                return {.status = Http::Status::BadRequest, .body = orderIdResult.error().message()};
+                return {.status = Status::BadRequest, .body = orderIdResult.error().message()};
             }
 
             auto orderResult = _orderRepository->findById(orderIdResult.value());
             if (!orderResult) {
                 if (orderResult.error() == RepositoryError::NotFound) {
                     return {
-                        .status = Http::Status::NotFound,
+                        .status = Status::NotFound,
                         .body = orderResult.error().message()
                     };
                 }
 
                 return {
-                    .status = Http::Status::InternalServerError,
+                    .status = Status::InternalServerError,
                     .body = orderResult.error().message()
                 };
             }
 
 
             return {
-                .status = Http::Status::Ok,
+                .status = Status::Ok,
                 .body = OrderJsonMapper::toJson(orderResult.value()).dump()
             };
         };

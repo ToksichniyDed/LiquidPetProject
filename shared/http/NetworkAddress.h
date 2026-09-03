@@ -8,9 +8,10 @@
 #include <expected>
 #include <string>
 #include <system_error>
+
 #include <boost/asio/ip/address.hpp>
 
-namespace order_system::models {
+namespace shared::http::models {
 
     enum class NetworkAddressError : std::uint8_t {
         EmptyAddress = 1,
@@ -46,11 +47,11 @@ namespace order_system::models {
 
 namespace std {
     template <>
-    struct is_error_code_enum<order_system::models::NetworkAddressError> : true_type {
+    struct is_error_code_enum<shared::http::models::NetworkAddressError> : true_type {
     };
 }
 
-namespace order_system::models {
+namespace shared::http::models {
     class NetworkAddress {
     public:
         static std::expected<NetworkAddress, std::error_code> create(std::string value) {

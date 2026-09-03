@@ -7,11 +7,11 @@
 
 #include "http/HttpMessage.h"
 
-namespace order_service::handlers {
-   class IRequestHandler {
+namespace shared::http {
+    class IRequestHandler {
 public:
        virtual ~IRequestHandler() = default;
-       virtual Http::Response handle(const Http::Request& request) = 0;
+       virtual Response handle(const Request& request) = 0;
 };
 }
 

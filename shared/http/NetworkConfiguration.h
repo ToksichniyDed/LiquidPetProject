@@ -7,7 +7,7 @@
 
 #include "NetworkAddress.h"
 
-namespace order_system::models {
+namespace shared::http::models {
     struct NetworkConfiguration {
         NetworkAddress address;
         uint16_t port;

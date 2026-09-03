@@ -10,9 +10,9 @@
 
 #include "IRequestHandler.h"
 
-namespace order_service::handlers {
+namespace shared::http::handlers {
     struct Route {
-        Http::Method method;
+        Method method;
         std::string pathPrefix;
         std::shared_ptr<IRequestHandler> handler;
     };

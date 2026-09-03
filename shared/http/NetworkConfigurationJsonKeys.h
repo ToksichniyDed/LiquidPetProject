@@ -5,7 +5,7 @@
 #ifndef LIQUIDPETPROJECT_NETWORKJSONKEYS_H
 #define LIQUIDPETPROJECT_NETWORKJSONKEYS_H
 
-namespace order_system::models2json_mapper::keys {
+namespace shared::http::models2json_mapper::keys {
 
     inline constexpr auto NETWORK_CONFIGURATION_PORT = "port";
     inline constexpr auto NETWORK_CONFIGURATION_ADDRESS = "address";

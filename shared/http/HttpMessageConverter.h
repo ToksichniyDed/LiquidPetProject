@@ -10,15 +10,17 @@
 
 #include <http/HttpMessage.h>
 
-namespace order_service::handlers {
-    namespace beast = boost::beast;
-    namespace http = beast::http;
-
+namespace shared::http {
     class HttpMessageConverter {
     public:
-        static Http::Request toHttpRequest(const http::request<http::string_body>& request);
-        static http::response<http::string_body> toBeastResponse(const Http::Response& response);
-        static Http::Method toHttpMethod(http::verb verb);
+        static Request toHttpRequest(const boost::beast::http::request<boost::beast::http::string_body>& request);
+        static boost::beast::http::request<boost::beast::http::string_body> toBeastRequest(const Request& request);
+
+        static boost::beast::http::response<boost::beast::http::string_body> toBeastResponse(const Response& response);
+        static Response toHttpResponse(const boost::beast::http::response<boost::beast::http::string_body>& response);
+
+        static Method toHttpMethod(boost::beast::http::verb verb);
+        static boost::beast::http::verb toVerb(Method method);
     };
 }
 

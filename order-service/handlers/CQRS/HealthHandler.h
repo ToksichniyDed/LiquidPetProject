@@ -10,9 +10,9 @@
 namespace order_service::handlers {
     class HealthHandler : public IRequestHandler {
     public:
-        Http::Response handle(const Http::Request& /*request*/) override {
+        Response handle(const Request& /*request*/) override {
             return {
-                .status = Http::Status::Ok,
+                .status = Status::Ok,
                 .body = "OK"
             };
         }

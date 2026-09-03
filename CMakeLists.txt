@@ -13,4 +13,4 @@ endif()
 
 add_subdirectory(shared)
 add_subdirectory(order-service)
-# add_subdirectory(gateway)
+add_subdirectory(gateway)
