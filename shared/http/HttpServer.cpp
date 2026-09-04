@@ -24,11 +24,24 @@ namespace shared::http {
                                                                    _networkConfiguration.address.
                                                                    value()),
                                                                _networkConfiguration.port)),
+                                                 _signals(_ioContext, SIGINT, SIGTERM),
                                                  _handlers(std::move(handlers)) {
+
+        _signals.async_wait([this](const boost::system::error_code& ec, int signalNumber) {
+            if (ec)
+                return;
+            SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Received signal {}, shutting down", signalNumber);
+            stop();
+        });
 
         SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server created successfully!");
         SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server address : {}", _networkConfiguration.address.value());
         SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server port : {}", _networkConfiguration.port);
+    }
+
+    HttpServer::~HttpServer() {
+        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server destroyed successfully!");
+
     }
 
     void HttpServer::run() {
