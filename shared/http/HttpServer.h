@@ -15,6 +15,7 @@ namespace shared::http {
     class HttpServer {
         public:
         explicit HttpServer(models::NetworkConfiguration config, std::vector<handlers::Route> handlers);
+        ~HttpServer();
 
         void run();
         void stop();
@@ -30,6 +31,7 @@ namespace shared::http {
         models::NetworkConfiguration _networkConfiguration;
         boost::asio::io_context _ioContext;
         boost::asio::ip::tcp::acceptor _acceptor;
+        boost::asio::signal_set _signals;
 
         std::vector<handlers::Route> _handlers;
     };

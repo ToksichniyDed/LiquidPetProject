@@ -61,63 +61,73 @@ namespace shared::http::tests {
     }
 
     class HttpServerTest : public ::testing::Test {
-    protected:
+protected:
         static void SetUpTestSuite() {
             Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
         }
 
-        void SetUp() override {
-            auto address = models::NetworkAddress::create("127.0.0.1");
-            ASSERT_TRUE(address.has_value());
+        void startServerOn(std::uint16_t port) {
+        testPort = port;
+        auto address = models::NetworkAddress::create("127.0.0.1");
+        ASSERT_TRUE(address.has_value());
 
-            models::NetworkConfiguration config{.address = address.value(), .port = testPort};
+        models::NetworkConfiguration config{.address = address.value(), .port = testPort};
 
-            std::vector<handlers::Route> routes = {
-                {shared::http::Method::Get, "/health", std::make_shared<HealthHandler>()},
-                {shared::http::Method::Post, "/echo", std::make_shared<EchoHandler>()},
-            };
+        std::vector<handlers::Route> routes = {
+            {shared::http::Method::Get, "/health", std::make_shared<HealthHandler>()},
+            {shared::http::Method::Post, "/echo", std::make_shared<EchoHandler>()},
+        };
 
-            server = std::make_unique<HttpServer>(std::move(config), std::move(routes));
-            serverThread = std::thread([this] { server->run(); });
+        server = std::make_unique<HttpServer>(std::move(config), std::move(routes));
+        serverThread = std::thread([this] { server->run(); });
 
-            // дать серверу время забиндиться и войти в accept, костыль
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
 
         void TearDown() override {
+        if (server) {
             server->stop();
             if (serverThread.joinable()) {
                 serverThread.join();
             }
         }
+    }
 
-        static constexpr std::uint16_t testPort = 18081;
+        std::uint16_t testPort = 0;
         std::unique_ptr<HttpServer> server;
         std::thread serverThread;
     };
 
     TEST_F(HttpServerTest, RespondsToHealthCheck) {
+        startServerOn(18081);
+
         const auto response = sendRequest("127.0.0.1", testPort, beast_http::verb::get, "/health");
 
         EXPECT_EQ(response.result_int(), 200);
-        EXPECT_EQ(response.body(), "ok");
-    }
+    EXPECT_EQ(response.body(), "ok");
+}
 
-    TEST_F(HttpServerTest, EchoesPostBody) {
-        const auto response = sendRequest("127.0.0.1", testPort, beast_http::verb::post, "/echo", "hello world");
+TEST_F(HttpServerTest, EchoesPostBody) {
+    startServerOn(18082);
 
-        EXPECT_EQ(response.result_int(), 200);
-        EXPECT_EQ(response.body(), "hello world");
-    }
+    const auto response = sendRequest("127.0.0.1", testPort, beast_http::verb::post, "/echo", "hello world");
 
-    TEST_F(HttpServerTest, ReturnsNotFoundForUnknownPath) {
-        const auto response = sendRequest("127.0.0.1", testPort, beast_http::verb::get, "/unknown");
+    EXPECT_EQ(response.result_int(), 200);
+    EXPECT_EQ(response.body(), "hello world");
+}
 
-        EXPECT_EQ(response.result_int(), 404);
-    }
+TEST_F(HttpServerTest, ReturnsNotFoundForUnknownPath) {
+    startServerOn(18083);
 
-    TEST_F(HttpServerTest, StopClosesAcceptorAndThreadJoinsCleanly) {
-        server->stop();
-        serverThread.join();
-    }
+    const auto response = sendRequest("127.0.0.1", testPort, beast_http::verb::get, "/unknown");
+
+    EXPECT_EQ(response.result_int(), 404);
+}
+
+TEST_F(HttpServerTest, StopClosesAcceptorAndThreadJoinsCleanly) {
+    startServerOn(18084);
+
+    server->stop();
+    serverThread.join();
+}
 }
