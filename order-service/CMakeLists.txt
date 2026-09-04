@@ -6,6 +6,8 @@ add_subdirectory(handlers)
 
 add_executable(order_service main.cpp)
 
+find_package(CLI11 REQUIRED CONFIG)
+
 target_link_libraries(order_service PRIVATE
     order_models
     order_repository
@@ -13,4 +15,5 @@ target_link_libraries(order_service PRIVATE
     order_models2json_mapper
     shared_logging
     shared_http
+    CLI11::CLI11
 )
