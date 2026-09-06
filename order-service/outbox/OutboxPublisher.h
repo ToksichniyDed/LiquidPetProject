@@ -19,7 +19,7 @@ namespace order_service::outbox {
     public:
         OutboxPublisher(
             std::shared_ptr<IOutboxRepository> repository,
-            std::shared_ptr<IEventPublisher> publisher,
+            std::shared_ptr<messaging::IEventPublisher> publisher,
             std::string topic,
             std::chrono::milliseconds pollInterval = std::chrono::milliseconds(500),
             int batchSize = 100);
@@ -30,17 +30,16 @@ namespace order_service::outbox {
     private:
         void run(const std::stop_token& stopToken) const;
         void processBatch() const;
+        void publishEntry(const OutboxEntry& entry) const;
 
-    private:
         std::shared_ptr<IOutboxRepository> _repository;
-        std::shared_ptr<IEventPublisher> _publisher;
+        std::shared_ptr<messaging::IEventPublisher> _publisher;
         std::string _topic;
         std::chrono::milliseconds _pollInterval;
         int _batchSize;
 
         std::jthread _thread;
     };
-
 }
 
 
