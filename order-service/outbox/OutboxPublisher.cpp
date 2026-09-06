@@ -9,7 +9,7 @@
 namespace order_service::outbox {
     OutboxPublisher::OutboxPublisher(
         std::shared_ptr<IOutboxRepository> repository,
-        std::shared_ptr<IEventPublisher> publisher,
+        std::shared_ptr<messaging::IEventPublisher> publisher,
         std::string topic,
         const std::chrono::milliseconds pollInterval,
         const int batchSize) : _repository(std::move(repository)),
@@ -42,15 +42,31 @@ namespace order_service::outbox {
     void OutboxPublisher::processBatch() const {
         const auto entries = _repository->fetchUnpublished(_batchSize);
 
-        for (const auto& entry : entries) {
-            const bool success = _publisher->publish(_topic, entry.aggregateId, entry.payload);
+        if (!entries.has_value()) {
+            SPDLOG_LOGGER_ERROR(Logger::get("OutboxPublisher"),
+                                "Fetch unpublished entries failed: {}", entries.error().message());
+            return;
+        }
 
-            if (success)
-                _repository->markAsPublished(entry.id);
-            else
-                SPDLOG_LOGGER_WARN(Logger::get("OutboxPublisher"),
-                               "Failed to publish outbox entry {}, will retry next cycle", entry.id);
+        for (const auto& entry : entries.value()) {
+            publishEntry(entry);
         }
     }
 
+    void OutboxPublisher::publishEntry(const OutboxEntry& entry) const {
+        const auto publishResult = _publisher->publish(_topic, entry.aggregateId, entry.payload);
+
+        if (!publishResult.has_value()) {
+            SPDLOG_LOGGER_WARN(Logger::get("OutboxPublisher"),
+                               "Failed to publish outbox entry {}: {}, will retry next cycle",
+                               entry.id, publishResult.error().message());
+            return;
+        }
+
+        _repository->markAsPublished(entry.id).or_else([&entry](const std::error_code& ec) {
+            SPDLOG_LOGGER_WARN(Logger::get("OutboxPublisher"),
+                               "Failed to mark entry {} as published: {}", entry.id, ec.message());
+            return std::expected<void, std::error_code>{std::unexpected(ec)};
+        });
+    }
 }
