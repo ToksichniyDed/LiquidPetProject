@@ -15,6 +15,7 @@ target_link_libraries(order_repository
     order_models
     PRIVATE
     order_models2row_mapper
+    order_models2json_mapper
     shared_json
     shared_logging
     shared_include_paths

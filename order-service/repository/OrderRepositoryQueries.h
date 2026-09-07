@@ -9,6 +9,7 @@ namespace order_system::repository::queries {
 
     inline constexpr auto INSERT_ORDER = "insert_order";
     inline constexpr auto INSERT_ORDER_ITEM = "insert_order_item";
+    inline constexpr auto INSERT_OUTBOX_EVENT = "insert_outbox_event";
     inline constexpr auto SELECT_ORDER = "select_order";
     inline constexpr auto SELECT_ORDER_ITEMS = "select_order_items";
 
@@ -31,6 +32,10 @@ namespace order_system::repository::queries {
             "SELECT product_id, quantity, price_minor_units, price_currency_code, price_currency_minor_digits "
             "FROM order_items "
             "WHERE order_id = $1";
+
+        inline constexpr auto INSERT_OUTBOX_EVENT_SQL =
+                "INSERT INTO outbox (aggregate_id, event_type, payload) "
+                "VALUES ($1, $2, $3::jsonb)";
 
 }
 

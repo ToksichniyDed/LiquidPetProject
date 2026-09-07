@@ -7,6 +7,7 @@
 #include "PostgresOrderRepository.h"
 #include "OrderRepositoryQueries.h"
 #include "mapper/OrderRowMapper.h"
+#include "mapper/OrderJsonMapper.h"
 
 #include <json/Json.h>
 #include <logging/Logger.h>
@@ -22,6 +23,7 @@ namespace order_system::repository {
 
             _connection.prepare(INSERT_ORDER, INSERT_ORDER_SQL);
             _connection.prepare(INSERT_ORDER_ITEM, INSERT_ORDER_ITEM_SQL);
+            _connection.prepare(INSERT_OUTBOX_EVENT, INSERT_OUTBOX_EVENT_SQL);
             _connection.prepare(SELECT_ORDER, SELECT_ORDER_SQL);
             _connection.prepare(SELECT_ORDER_ITEMS, SELECT_ORDER_ITEMS_SQL);
 
@@ -84,9 +86,23 @@ namespace order_system::repository {
                 );
             }
 
+            auto orderId = OrderId::create(orderIdValue);
+            if (!orderId.has_value()) {
+                return std::unexpected(orderId.error());
+            }
+
+            auto orderWithId = order;
+            orderWithId.assignId(*orderId);
+
+            work.exec(pqxx::prepped{INSERT_OUTBOX_EVENT}, pqxx::params{
+                          orderIdValue,
+                          "OrderCreated",
+                          models2json_mapper::OrderJsonMapper::toJson(orderWithId).dump()
+                      });
+
             work.commit();
 
-            return OrderId::create(orderIdValue);
+            return orderId;
         } catch (const std::exception& e) {
             return std::unexpected(mapException(e));
         }
