@@ -3,7 +3,8 @@ find_package(modern-cpp-kafka REQUIRED CONFIG)
 
 add_library(order_outbox STATIC
     OutboxPublisher.cpp
-    PostgresOutboxRepository.cpp)
+    PostgresOutboxRepository.cpp
+    KafkaEventPublisher.cpp)
 
 target_sources(order_outbox PUBLIC
     IEventPublisher.h
