@@ -19,6 +19,11 @@
 #include "CLI/App.hpp"
 #include "CLI/CLI.hpp"
 #include "CLI/Macros.hpp"
+#include "outbox/IEventPublisher.h"
+#include "outbox/IOutboxRepository.h"
+#include "outbox/KafkaEventPublisher.h"
+#include "outbox/OutboxPublisher.h"
+#include "outbox/PostgresOutboxRepository.h"
 
 namespace {
 
@@ -134,6 +139,12 @@ int main(const int argc, char* argv[]) {
         return 1;
     }
 
+    const char* kafkaBrokers = std::getenv("KAFKA_BROKERS");
+    if (!kafkaBrokers) {
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "KAFKA_BROKERS environment variable is not set");
+        return 1;
+    }
+
     auto networkConfiguration = unwrapOrExit(
         loadNetworkConfiguration(options.configPath, options.addressOverride, options.portOverride));
 
@@ -141,15 +152,31 @@ int main(const int argc, char* argv[]) {
         loadDatabaseConfiguration(options.configPath, dbPassword));
 
     std::shared_ptr<order_system::repository::IOrderRepository> repository;
+    std::shared_ptr<order_service::outbox::IOutboxRepository> outboxRepository;
+
     try {
         repository = std::make_shared<order_system::repository::PostgresOrderRepository>(databaseConfiguration);
+        outboxRepository = std::make_shared<order_service::outbox::PostgresOutboxRepository>(databaseConfiguration);
     } catch (const std::exception& e) {
         SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error: {}", e.what());
         return 1;
     }
 
+    std::shared_ptr<order_service::messaging::IEventPublisher> eventPublisher;
+    try {
+        eventPublisher = std::make_shared<order_service::messaging::KafkaEventPublisher>(kafkaBrokers);
+    } catch (const std::exception& e) {
+        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error creating Kafka producer: {}", e.what());
+        return 1;
+    }
+
+    order_service::outbox::OutboxPublisher outboxPublisher(outboxRepository, eventPublisher, "orders.events");
+    outboxPublisher.start();
+
     order_service::handlers::HttpServer server{std::move(networkConfiguration), buildRoutes(repository)};
     server.run();
+
+    outboxPublisher.stop();
 
     return 0;
 }

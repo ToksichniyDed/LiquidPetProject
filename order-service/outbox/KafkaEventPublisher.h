@@ -13,6 +13,7 @@
 
 namespace order_service::messaging {
     class KafkaEventPublisher : public IEventPublisher {
+    public:
         explicit KafkaEventPublisher(const std::string& brokers);
         ~KafkaEventPublisher() override;
 
