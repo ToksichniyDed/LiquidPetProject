@@ -16,11 +16,11 @@ namespace order_service::outbox {
 
     using ::testing::_;
     using ::testing::Return;
-    using ::testing::Invoke;
 
     using outbox::MockOutboxRepository;
     using outbox::OutboxEntry;
     using messaging::MockEventPublisher;
+    using messaging::makeReadyFuture;
 
     class OutboxPublisherTest : public ::testing::Test {
     protected:
@@ -46,20 +46,21 @@ namespace order_service::outbox {
         std::promise<void> markedAsPublished;
         auto markedAsPublishedFuture = markedAsPublished.get_future();
 
-        // первый вызов отдаёт запись, все последующие - пустой список,
-        // чтобы цикл не пытался переотправить её бесконечно
         EXPECT_CALL(*_repository, fetchUnpublished(_))
             .WillOnce(Return(std::vector<OutboxEntry>{entry}))
             .WillRepeatedly(Return(std::vector<OutboxEntry>{}));
 
         EXPECT_CALL(*_publisher, publish("orders.events", entry.aggregateId, entry.payload))
-                .WillOnce(Return(std::expected<void, std::error_code>{}));
+            .WillOnce([](const std::string&, const std::string&, const std::string&) {
+                                                                                                return makeReadyFuture(
+                                                                                                    {});
+                                                                                            });
 
         EXPECT_CALL(*_repository, markAsPublished(entry.id))
             .WillOnce([&markedAsPublished](const std::string&) {
-                                                                markedAsPublished.set_value();
-                                                                return std::expected<void, std::error_code>{};
-                                                            });
+                markedAsPublished.set_value();
+                return std::expected<void, std::error_code>{};
+        });
 
         OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
         publisher.start();
@@ -88,13 +89,14 @@ namespace order_service::outbox {
         EXPECT_CALL(*_publisher, publish(_, _, _))
             .WillOnce([&publishAttempted](const std::string&, const std::string&, const std::string&) {
                                                       publishAttempted.set_value();
-                                                      return std::expected<void, std::error_code>{
-                                                          std::unexpected(
-                                                              messaging::EventPublisherError::BrokerRejected)
-                                                      };
-                                                  });
+                                                      return makeReadyFuture(
+                                                          std::expected<void, std::error_code>{
+                                                              std::unexpected(
+                                                                  messaging::EventPublisherError::BrokerRejected)
+                                                          });
+        });
 
-        //раз публикация не удалась - markAsPublished не должен вызываться вообще
+        // раз публикация не удалась, markAsPublished не должен вызываться вообще
         EXPECT_CALL(*_repository, markAsPublished(_)).Times(0);
 
         OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
@@ -111,10 +113,10 @@ namespace order_service::outbox {
         auto fetchedFuture = fetchedAtLeastTwice.get_future();
         std::atomic<int> callCount{0};
 
-        // repository падает с ошибкой, но цикл не должен падать/останавливаться -
+        // repository падает с ошибкой, но цикл не должен падать/останавливаться
         // должен просто попробовать снова в следующем polling-цикле
         EXPECT_CALL(*_repository, fetchUnpublished(_))
-            .WillRepeatedly([&](int) {
+            .WillRepeatedly([&callCount, &fetchedAtLeastTwice](int) {
                                                           if (++callCount == 2) {
                                                               fetchedAtLeastTwice.set_value();
                                                           }
@@ -133,6 +135,57 @@ namespace order_service::outbox {
         publisher.stop();
 
         ASSERT_EQ(status, std::future_status::ready) << "publisher did not keep polling after fetch failure";
+    }
+
+    TEST_F(OutboxPublisherTest, PublishesAllEntriesInBatchConcurrentlyBeforeAwaitingResults) {
+        // publish() должен быть вызван для каждой записи
+        // батча до того, как паблишер начнёт дожидаться результатов
+        // имитируем это тем, что все promise выставляются позже, вручную,
+        // а не сразу внутри лямбды publish()
+        const OutboxEntry entryA{.id = "a", .aggregateId = "order-a", .eventType = "OrderCreated", .payload = "{}"};
+        const OutboxEntry entryB{.id = "b", .aggregateId = "order-b", .eventType = "OrderCreated", .payload = "{}"};
+
+        std::promise<std::expected<void, std::error_code>> promiseA;
+        std::promise<std::expected<void, std::error_code>> promiseB;
+
+        std::promise<void> bothPublishCalled;
+        auto bothPublishCalledFuture = bothPublishCalled.get_future();
+        std::atomic<int> publishCallCount{0};
+
+        EXPECT_CALL(*_repository, fetchUnpublished(_))
+            .WillOnce(Return(std::vector<OutboxEntry>{entryA, entryB}))
+            .WillRepeatedly(Return(std::vector<OutboxEntry>{}));
+
+        EXPECT_CALL(*_publisher, publish(_, "order-a", _))
+            .WillOnce([&publishCallCount, &bothPublishCalled, &promiseA](
+                                                          const std::string&, const std::string&, const std::string&) {
+                                                                  if (++publishCallCount == 2)
+                                                                      bothPublishCalled.set_value();
+                                                                  return promiseA.get_future();
+                                                              });
+
+        EXPECT_CALL(*_publisher, publish(_, "order-b", _))
+            .WillOnce([&publishCallCount, &bothPublishCalled, &promiseB](
+                                                          const std::string&, const std::string&, const std::string&) {
+                                                                  if (++publishCallCount == 2)
+                                                                      bothPublishCalled.set_value();
+                                                                  return promiseB.get_future();
+                                                              });
+
+        EXPECT_CALL(*_repository, markAsPublished(_))
+            .WillRepeatedly(Return(std::expected<void, std::error_code>{}));
+
+        OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        publisher.start();
+
+        const auto status = bothPublishCalledFuture.wait_for(std::chrono::seconds(2));
+        ASSERT_EQ(status, std::future_status::ready)
+            << "publish was not called for both entries before awaiting results - batching is broken";
+
+        promiseA.set_value({});
+        promiseB.set_value({});
+
+        publisher.stop();
     }
 
 }
