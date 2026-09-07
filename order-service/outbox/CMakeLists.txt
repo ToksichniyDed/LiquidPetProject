@@ -1,4 +1,5 @@
 find_package(libpqxx REQUIRED CONFIG)
+find_package(modern-cpp-kafka REQUIRED CONFIG)
 
 add_library(order_outbox STATIC
     OutboxPublisher.cpp
@@ -10,7 +11,7 @@ target_sources(order_outbox PUBLIC
     OutboxRepositoryQueries.h
 )
 
-target_link_libraries(order_outbox PRIVATE shared_logging order_models libpqxx::pqxx)
+target_link_libraries(order_outbox PRIVATE shared_logging order_models libpqxx::pqxx modern-cpp-kafka::modern-cpp-kafka)
 target_include_directories(order_outbox PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (BUILD_TESTING)

@@ -56,7 +56,7 @@ namespace order_service::messaging {
     public:
         virtual ~IEventPublisher() = default;
 
-        [[nodiscard]] virtual std::expected<void, std::error_code> publish(
+        [[nodiscard]] virtual std::future<std::expected<void, std::error_code>> publish(
             const std::string& topic,
             const std::string& key,
             const std::string& payload) = 0;
