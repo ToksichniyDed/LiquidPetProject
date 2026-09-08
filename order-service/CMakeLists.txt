@@ -3,7 +3,6 @@ add_subdirectory(models2json-mapper)
 add_subdirectory(models2row-mappers)
 add_subdirectory(repository)
 add_subdirectory(handlers)
-add_subdirectory(outbox)
 
 add_executable(order_service main.cpp)
 
