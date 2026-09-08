@@ -7,7 +7,7 @@
 #include <kafka/KafkaProducer.h>
 #include <logging/Logger.h>
 
-namespace order_service::messaging {
+namespace messaging {
     using namespace kafka;
     using namespace kafka::clients::producer;
 

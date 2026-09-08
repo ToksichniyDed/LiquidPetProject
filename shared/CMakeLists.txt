@@ -4,3 +4,5 @@ target_include_directories(shared_include_paths INTERFACE ${CMAKE_CURRENT_SOURCE
 add_subdirectory(logging)
 add_subdirectory(json)
 add_subdirectory(http)
+add_subdirectory(messaging)
+add_subdirectory(outbox)

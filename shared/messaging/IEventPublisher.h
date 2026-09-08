@@ -8,7 +8,7 @@
 #include <string>
 #include <expected>
 
-namespace order_service::messaging {
+namespace messaging {
     enum class EventPublisherError {
         ConnectionFailure = 1,
         Timeout,
@@ -47,11 +47,11 @@ namespace order_service::messaging {
 
 namespace std {
     template <>
-    struct is_error_code_enum<order_service::messaging::EventPublisherError> : true_type {
+    struct is_error_code_enum<messaging::EventPublisherError> : true_type {
     };
 }
 
-namespace order_service::messaging {
+namespace messaging {
     class IEventPublisher {
     public:
         virtual ~IEventPublisher() = default;
