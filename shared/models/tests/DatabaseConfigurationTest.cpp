@@ -6,7 +6,7 @@
 
 #include "DatabaseConfiguration.h"
 
-using namespace order_system::models;
+using namespace models;
 
 namespace {
     struct DatabaseConfigurationTestCase {

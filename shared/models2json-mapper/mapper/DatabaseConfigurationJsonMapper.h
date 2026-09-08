@@ -5,12 +5,12 @@
 #ifndef LIQUIDPETPROJECT_DATABASECONFIGURATIONJSONMAPPER_H
 #define LIQUIDPETPROJECT_DATABASECONFIGURATIONJSONMAPPER_H
 
+#include <DatabaseConfiguration.h>
 #include <keys/DatabaseConfigurationJsonKeys.h>
-#include "DatabaseConfiguration.h"
 #include <json/Json.h>
 
-namespace order_system::models2json_mapper {
-    using namespace order_system::models;
+namespace models2json_mapper {
+    using namespace models;
     using namespace Json;
     using namespace models2json_mapper::keys;
 

@@ -10,7 +10,7 @@
 #include <string>
 #include <system_error>
 
-namespace order_system::models {
+namespace models {
     enum class DatabaseConfigurationError : std::uint8_t {
         EmptyHost = 1,
         EmptyDatabaseName,
@@ -50,11 +50,11 @@ namespace order_system::models {
 
 namespace std {
     template <>
-    struct is_error_code_enum<order_system::models::DatabaseConfigurationError> : true_type {
+    struct is_error_code_enum<models::DatabaseConfigurationError> : true_type {
     };
 }
 
-namespace order_system::models {
+namespace models {
 
     class DatabaseConfiguration {
     public:
