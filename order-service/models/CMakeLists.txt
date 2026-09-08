@@ -19,7 +19,6 @@ if(BUILD_TESTING)
         tests/MoneyTest.cpp
         tests/CurrencyTest.cpp
         tests/OrderTest.cpp
-        tests/DatabaseConfigurationTest.cpp
     )
 
     target_link_libraries(order_models_tests PRIVATE

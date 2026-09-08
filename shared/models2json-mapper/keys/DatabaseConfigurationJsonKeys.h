@@ -5,7 +5,7 @@
 #ifndef LIQUIDPETPROJECT_DATABASECONFIGURATIONJSONKEYS_H
 #define LIQUIDPETPROJECT_DATABASECONFIGURATIONJSONKEYS_H
 
-namespace order_system::models2json_mapper::keys {
+namespace models2json_mapper::keys {
 
     inline constexpr auto DATABASE_HOST = "host";
     inline constexpr auto DATABASE_PORT = "port";

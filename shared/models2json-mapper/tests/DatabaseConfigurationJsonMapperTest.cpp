@@ -2,13 +2,14 @@
 // Created by DED on 31.08.2026.
 //
 
+#include <mapper/DatabaseConfigurationJsonMapper.h>
 #include <gtest/gtest.h>
+
 #include <nlohmann/json.hpp>
 
-#include <mapper/DatabaseConfigurationJsonMapper.h>
 #include "DatabaseConfiguration.h"
 
-using namespace order_system::models2json_mapper;
+using namespace models2json_mapper;
 
 namespace {
     nlohmann::json validDatabaseJson() {
@@ -134,7 +135,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 class DatabaseConfigurationJsonMapperToJsonTest : public ::testing::Test {
 protected:
-    static order_system::models::DatabaseConfiguration makeConfig() {
+    static models::DatabaseConfiguration makeConfig() {
         return DatabaseConfigurationJsonMapper::fromJson(validDatabaseJson(), "super-secret-password").value();
     }
 };

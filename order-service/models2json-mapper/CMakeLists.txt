@@ -3,12 +3,10 @@ add_library(order_models2json_mapper INTERFACE
 
 target_sources(order_models2json_mapper INTERFACE
     keys/CurrencyJsonKeys.h
-    keys/DatabaseConfigurationJsonKeys.h
     keys/MoneyJsonKeys.h
     keys/OrderJsonKeys.h
 
     mapper/CurrencyJsonMapper.h
-    mapper/DatabaseConfigurationJsonMapper.h
     mapper/MoneyJsonMapper.h
     mapper/OrderJsonMapper.h
 )
@@ -29,7 +27,6 @@ if (BUILD_TESTING)
         tests/MoneyJsonMapperTest.cpp
         tests/CurrencyJsonMapperTest.cpp
         tests/OrderJsonMapperTest.cpp
-        tests/DatabaseConfigurationJsonMapperTest.cpp
     )
 
     target_link_libraries(order_models2json_mapper_tests PUBLIC
