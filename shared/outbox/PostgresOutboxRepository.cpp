@@ -2,15 +2,13 @@
 // Created by DED on 06.09.2026.
 //
 
-#include <pqxx/pqxx>
-
 #include "PostgresOutboxRepository.h"
 #include "OutboxRepositoryQueries.h"
-
 #include <logging/Logger.h>
+#include <pqxx/pqxx>
 
-namespace order_service::outbox {
-    using namespace order_system::repository::queries;
+namespace outbox {
+    using namespace repository::queries;
 
     namespace {
         inline constexpr auto ID = "id";
@@ -21,7 +19,7 @@ namespace order_service::outbox {
 
     class PostgresOutboxRepository::Impl {
     public:
-        explicit Impl(const order_system::models::DatabaseConfiguration& config) : _connection(
+        explicit Impl(const models::DatabaseConfiguration& config) : _connection(
             config.toConnectionString()) {
 
             _connection.prepare(SELECT_UNPUBLISHED_OUTBOX, SELECT_UNPUBLISHED_OUTBOX_SQL);
@@ -64,7 +62,7 @@ namespace order_service::outbox {
     }
 
     PostgresOutboxRepository::PostgresOutboxRepository(
-        const order_system::models::DatabaseConfiguration& config) : _impl(
+        const models::DatabaseConfiguration& config) : _impl(
         std::make_unique<Impl>(config)) {
     }
 

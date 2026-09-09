@@ -15,6 +15,7 @@ target_link_libraries(order_service PRIVATE
     order_models2json_mapper
     shared_logging
     shared_http
+    shared_models
     order_outbox
     CLI11::CLI11
 )

@@ -2,15 +2,15 @@
 // Created by DED on 06.09.2026.
 //
 
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include <future>
 #include <chrono>
+#include <future>
 
-#include "OutboxPublisher.h"
-#include "MockOutboxRepository.h"
+#include "../../../shared/outbox/OutboxPublisher.h"
 #include "MockEventPublisher.h"
+#include "MockOutboxRepository.h"
 
 namespace order_service::outbox {
 

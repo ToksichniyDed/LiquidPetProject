@@ -5,7 +5,8 @@
 #ifndef LIQUIDPETPROJECT_POSTGRESORDERREPOSITORY_H
 #define LIQUIDPETPROJECT_POSTGRESORDERREPOSITORY_H
 
-#include <DatabaseConfiguration.h>
+#include <models/DatabaseConfiguration.h>
+
 #include "IOrderRepository.h"
 
 namespace order_system::repository {
