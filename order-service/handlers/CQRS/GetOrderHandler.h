@@ -5,6 +5,7 @@
 #ifndef LIQUIDPETPROJECT_GETORDERHANDLER_H
 #define LIQUIDPETPROJECT_GETORDERHANDLER_H
 
+#include "RoutePaths.h"
 #include <http/IRequestHandler.h>
 #include "IOrderRepository.h"
 
@@ -12,7 +13,7 @@ namespace order_service::handlers {
     class GetOrderHandler : public IRequestHandler {
     public:
         GetOrderHandler(
-            const std::shared_ptr<order_system::repository::IOrderRepository>& orderRepository) : _orderRepository(
+            const std::shared_ptr<IOrderRepository>& orderRepository) : _orderRepository(
             orderRepository) {
         };
 

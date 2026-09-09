@@ -12,7 +12,7 @@
 namespace order_system::repository {
     class PostgresOrderRepository : public IOrderRepository {
     public:
-        explicit PostgresOrderRepository(const models::DatabaseConfiguration& config);
+        explicit PostgresOrderRepository(const shared::models::DatabaseConfiguration& config);
         ~PostgresOrderRepository() override;
 
         PostgresOrderRepository(const PostgresOrderRepository&) = delete;

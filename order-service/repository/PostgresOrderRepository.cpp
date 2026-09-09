@@ -16,10 +16,11 @@ namespace order_system::repository {
     using namespace order_system::models;
     using namespace order_system::repository::queries;
     using namespace order_system::repository::columns;
+    using namespace shared::logger;
 
     class PostgresOrderRepository::Impl {
     public:
-        explicit Impl(const DatabaseConfiguration& config) : _connection(config.toConnectionString()) {
+        explicit Impl(const shared::models::DatabaseConfiguration& config) : _connection(config.toConnectionString()) {
 
             _connection.prepare(INSERT_ORDER, INSERT_ORDER_SQL);
             _connection.prepare(INSERT_ORDER_ITEM, INSERT_ORDER_ITEM_SQL);
@@ -27,11 +28,11 @@ namespace order_system::repository {
             _connection.prepare(SELECT_ORDER, SELECT_ORDER_SQL);
             _connection.prepare(SELECT_ORDER_ITEMS, SELECT_ORDER_ITEMS_SQL);
 
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOrderRepository"), "Database connection successfully!");
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOrderRepository"), "Database name : {}", config.databaseName());
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOrderRepository"), "Database host : {}", config.host());
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOrderRepository"), "Database port : {}", config.port());
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOrderRepository"), "Database user : {}", config.user());
+            SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database connection successfully!");
+            SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database name : {}", config.databaseName());
+            SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database host : {}", config.host());
+            SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database port : {}", config.port());
+            SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database user : {}", config.user());
         }
 
     public:
@@ -55,7 +56,7 @@ namespace order_system::repository {
 
     }
 
-    PostgresOrderRepository::PostgresOrderRepository(const DatabaseConfiguration& config) : _impl(
+    PostgresOrderRepository::PostgresOrderRepository(const shared::models::DatabaseConfiguration& config) : _impl(
         std::make_unique<Impl>(config)) {
     }
 

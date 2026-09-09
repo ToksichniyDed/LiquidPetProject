@@ -5,6 +5,8 @@
 #ifndef LIQUIDPETPROJECT_ROUTEPATHS_H
 #define LIQUIDPETPROJECT_ROUTEPATHS_H
 
+#include <string>
+
 namespace order_service::handlers::paths {
 
     inline constexpr std::string ORDERS = "/orders";
