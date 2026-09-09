@@ -10,7 +10,7 @@
 
 #include <CLI/CLI.hpp>
 
-#include <http/NetworkConfigurationJsonMapper.h>
+#include <models2json-mapper/mapper/NetworkConfigurationJsonMapper.h>
 #include <http/Route.h>
 #include <http/HttpServer.h>
 #include <logging/Logger.h>
@@ -50,48 +50,48 @@ namespace {
     template <typename T>
     T unwrapOrExit(std::expected<T, std::error_code> result) {
         if (!result.has_value()) {
-            SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error {} : {}",
+            SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "Error {} : {}",
                                    result.error().category().name(), result.error().message());
             std::exit(1);
         }
         return std::move(result.value());
     }
 
-    shared::http::models::NetworkConfiguration loadGatewayNetworkConfiguration(
+    shared::models::NetworkConfiguration loadGatewayNetworkConfiguration(
         const std::filesystem::path& configPath,
         const std::optional<std::string>& addressOverride,
         const std::optional<std::uint16_t>& portOverride) {
 
-        auto networkSection = Json::JsonHelper::loadSection(configPath, "network");
+        auto networkSection = shared::json::JsonHelper::loadSection(configPath, "network");
         auto networkConfiguration = unwrapOrExit(
-            shared::http::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
+            shared::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
                 unwrapOrExit(std::move(networkSection))));
 
         if (addressOverride.has_value()) {
             auto overriddenAddress = unwrapOrExit(
-                shared::http::models::NetworkAddress::create(*addressOverride));
-            networkConfiguration.address = overriddenAddress;
-            SPDLOG_LOGGER_INFO(Logger::get("main"), "Gateway address overridden via CLI: {}", *addressOverride);
+                shared::models::NetworkAddress::create(*addressOverride));
+            networkConfiguration.address = std::move(overriddenAddress);
+            SPDLOG_LOGGER_INFO(shared::logger::get("main"), "Gateway address overridden via CLI: {}", *addressOverride);
         }
 
         if (portOverride.has_value()) {
             networkConfiguration.port = *portOverride;
-            SPDLOG_LOGGER_INFO(Logger::get("main"), "Gateway port overridden via CLI: {}", *portOverride);
+            SPDLOG_LOGGER_INFO(shared::logger::get("main"), "Gateway port overridden via CLI: {}", *portOverride);
         }
 
         return networkConfiguration;
     }
 
-    shared::http::models::NetworkConfiguration loadOrderServiceConfiguration(const std::filesystem::path& configPath) {
-        auto servicesSection = unwrapOrExit(Json::JsonHelper::loadSection(configPath, "services"));
+    shared::models::NetworkConfiguration loadOrderServiceConfiguration(const std::filesystem::path& configPath) {
+        auto servicesSection = unwrapOrExit(shared::json::JsonHelper::loadSection(configPath, "services"));
 
         if (!servicesSection.contains("orderService")) {
-            SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Missing 'orderService' section under 'services'");
+            SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "Missing 'orderService' section under 'services'");
             std::exit(1);
         }
 
         return unwrapOrExit(
-            shared::http::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
+            shared::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
                 servicesSection["orderService"]));
     }
 
@@ -99,8 +99,8 @@ namespace {
         const std::shared_ptr<gateway_service::handlers::ProxyHandler>& proxyHandler) {
 
         return {
-            {shared::http::Method::Get, "/", proxyHandler},
-            {shared::http::Method::Post, "/", proxyHandler},
+            {.method=shared::models::Method::Get, .pathPrefix="/", .handler=proxyHandler},
+            {.method=shared::models::Method::Post, .pathPrefix="/", .handler=proxyHandler},
         };
     }
 
@@ -109,14 +109,14 @@ namespace {
 int main(const int argc, char* argv[]) {
     const auto options = parseCliOptions(argc, argv);
 
-    Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
+    shared::logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
 
     auto gatewayConfiguration = loadGatewayNetworkConfiguration(
         options.configPath, options.addressOverride, options.portOverride);
 
     auto orderServiceConfiguration = loadOrderServiceConfiguration(options.configPath);
 
-    std::unordered_map<std::string, shared::http::models::NetworkConfiguration> services;
+    std::unordered_map<std::string, shared::models::NetworkConfiguration> services;
     services.emplace("/orders", std::move(orderServiceConfiguration));
 
     auto proxyHandler = std::make_shared<gateway_service::handlers::ProxyHandler>(std::move(services));

@@ -5,4 +5,12 @@ add_executable(gateway_service
 
 find_package(CLI11 REQUIRED CONFIG)
 
-target_link_libraries(gateway_service PRIVATE gateway_handlers shared_logging shared_json CLI11::CLI11)
+target_link_libraries(gateway_service PRIVATE
+    gateway_handlers
+
+    shared_models
+    shared_http
+    shared_logging
+    shared_json
+    shared_models2json_mapper
+    CLI11::CLI11)

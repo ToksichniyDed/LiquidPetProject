@@ -5,27 +5,24 @@
 #ifndef LIQUIDPETPROJECT_PROXYHANDLER_H
 #define LIQUIDPETPROJECT_PROXYHANDLER_H
 
-#include <unordered_map>
+#include <models/NetworkConfiguration.h>
+#include <http/IRequestHandler.h>
 
 #include <boost/asio.hpp>
-#include <boost/beast.hpp>
-
-#include <http/IRequestHandler.h>
-#include <http/NetworkAddress.h>
-#include <http/NetworkConfiguration.h>
+#include <unordered_map>
 
 namespace gateway_service::handlers {
 
     class ProxyHandler : public shared::http::IRequestHandler {
     public:
-        explicit ProxyHandler(std::unordered_map<std::string, shared::http::models::NetworkConfiguration> services);
+        explicit ProxyHandler(std::unordered_map<std::string, shared::models::NetworkConfiguration> services);
         ~ProxyHandler() override = default;
-        shared::http::Response handle(const shared::http::Request& request) override;
+        shared::models::Response handle(const shared::models::Request& request) override;
 
     private:
         boost::asio::io_context _ioContext;
 
-        std::unordered_map<std::string, shared::http::models::NetworkConfiguration> _servicesUrl;
+        std::unordered_map<std::string, shared::models::NetworkConfiguration> _servicesUrl;
 
     };
 }

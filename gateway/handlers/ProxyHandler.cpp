@@ -3,18 +3,22 @@
 //
 
 #include "ProxyHandler.h"
+
 #include <http/HttpMessageConverter.h>
 
+#include <boost/beast/core/flat_buffer.hpp>
+
 namespace gateway_service::handlers {
+    using namespace shared::models;
 
     ProxyHandler::ProxyHandler(
-        std::unordered_map<std::string, shared::http::models::NetworkConfiguration> services) : _ioContext(1),
+        std::unordered_map<std::string, NetworkConfiguration> services) : _ioContext(1),
         _servicesUrl(std::move(services)) {
     }
 
-    shared::http::Response ProxyHandler::handle(const shared::http::Request& request) {
-        if (request.method == shared::http::Method::Unknown) {
-            return {.status = shared::http::Status::MethodNotAllowed};
+    Response ProxyHandler::handle(const Request& request) {
+        if (request.method == Method::Unknown) {
+            return {.status = Status::MethodNotAllowed};
         }
 
         for (const auto& [pathPrefix, config] : _servicesUrl) {
@@ -32,12 +36,12 @@ namespace gateway_service::handlers {
                 beast::error_code ec;
                 const auto endpoints = resolver.resolve(host, port, ec);
                 if (ec) {
-                    return {.status = shared::http::Status::BadGateway};
+                    return {.status = Status::BadGateway};
                 }
 
                 boost::asio::connect(socket, endpoints, ec);
                 if (ec) {
-                    return {.status = shared::http::Status::BadGateway};
+                    return {.status = Status::BadGateway};
                 }
 
                 auto beastRequest = shared::http::HttpMessageConverter::toBeastRequest(request);
@@ -45,14 +49,14 @@ namespace gateway_service::handlers {
 
                 http::write(socket, beastRequest, ec);
                 if (ec) {
-                    return {.status = shared::http::Status::BadGateway};
+                    return {.status = Status::BadGateway};
                 }
 
                 beast::flat_buffer buffer;
                 http::response<http::string_body> beastResponse;
                 http::read(socket, buffer, beastResponse, ec);
                 if (ec) {
-                    return {.status = shared::http::Status::BadGateway};
+                    return {.status = Status::BadGateway};
                 }
 
                 socket.shutdown(tcp::socket::shutdown_both, ec);
@@ -61,6 +65,6 @@ namespace gateway_service::handlers {
             }
         }
 
-        return {.status = shared::http::Status::NotFound};
+        return {.status = Status::NotFound};
     }
 };
