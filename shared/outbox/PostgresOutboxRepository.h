@@ -5,13 +5,15 @@
 #ifndef LIQUIDPETPROJECT_POSTGRESOUTBOXREPOSITORY_H
 #define LIQUIDPETPROJECT_POSTGRESOUTBOXREPOSITORY_H
 
+#include <models/DatabaseConfiguration.h>
 #include "IOutboxRepository.h"
-#include "DatabaseConfiguration.h"
 
-namespace order_service::outbox {
+#include <memory>
+
+namespace outbox {
     class PostgresOutboxRepository : public IOutboxRepository {
     public:
-        explicit PostgresOutboxRepository(const order_system::models::DatabaseConfiguration& config);
+        explicit PostgresOutboxRepository(const models::DatabaseConfiguration& config);
         ~PostgresOutboxRepository() override;
 
         PostgresOutboxRepository(const PostgresOutboxRepository&) = delete;

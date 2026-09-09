@@ -6,7 +6,7 @@
 
 #include <logging/Logger.h>
 
-namespace order_service::outbox {
+namespace outbox {
     OutboxPublisher::OutboxPublisher(
         std::shared_ptr<IOutboxRepository> repository,
         std::shared_ptr<messaging::IEventPublisher> publisher,

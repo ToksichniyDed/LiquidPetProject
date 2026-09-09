@@ -5,16 +5,16 @@
 #ifndef LIQUIDPETPROJECT_OUTBOXPUBLISHER_H
 #define LIQUIDPETPROJECT_OUTBOXPUBLISHER_H
 
+#include <chrono>
+#include <future>
 #include <memory>
 #include <string>
-#include <chrono>
 #include <thread>
-#include <future>
 
-#include "IEventPublisher.h"
+#include "../messaging/IEventPublisher.h"
 #include "IOutboxRepository.h"
 
-namespace order_service::outbox {
+namespace outbox {
 
     class OutboxPublisher {
     public:
