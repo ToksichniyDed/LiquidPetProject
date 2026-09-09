@@ -5,7 +5,7 @@
 #ifndef LIQUIDPETPROJECT_OUTBOXREPOSITORYQUERIES_H
 #define LIQUIDPETPROJECT_OUTBOXREPOSITORYQUERIES_H
 
-namespace repository::queries {
+namespace shared::outbox::queries {
 
     inline constexpr auto SELECT_UNPUBLISHED_OUTBOX = "select_unpublished_outbox";
     inline constexpr auto MARK_OUTBOX_PUBLISHED = "mark_outbox_published";

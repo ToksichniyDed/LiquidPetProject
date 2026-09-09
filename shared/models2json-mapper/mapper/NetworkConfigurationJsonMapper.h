@@ -6,12 +6,13 @@
 #define LIQUIDPETPROJECT_NETWORKJSONMAPPER_H
 
 #include <json/Json.h>
-#include "NetworkConfiguration.h"
-#include "NetworkConfigurationJsonKeys.h"
 
-namespace shared::http::models2json_mapper {
-    using namespace shared::http::models;
-    using namespace Json;
+#include <models/NetworkConfiguration.h>
+#include <keys/NetworkConfigurationJsonKeys.h>
+
+namespace shared::models2json_mapper {
+    using namespace shared::models;
+    using namespace json;
     using namespace models2json_mapper::keys;
 
     class NetworkConfigurationJsonMapper {
@@ -21,7 +22,7 @@ namespace shared::http::models2json_mapper {
             if (!port.has_value())
                 return std::unexpected(port.error());
 
-            auto networkAddress = Json::JsonHelper::getValue<std::string>(section, NETWORK_CONFIGURATION_ADDRESS)
+            auto networkAddress = JsonHelper::getValue<std::string>(section, NETWORK_CONFIGURATION_ADDRESS)
                     .and_then([](std::string address) {
                         return NetworkAddress::create(std::move(address));
                     });

@@ -11,7 +11,7 @@
 
 #include <boost/asio/ip/address.hpp>
 
-namespace shared::http::models {
+namespace shared::models {
 
     enum class NetworkAddressError : std::uint8_t {
         EmptyAddress = 1,
@@ -47,11 +47,11 @@ namespace shared::http::models {
 
 namespace std {
     template <>
-    struct is_error_code_enum<shared::http::models::NetworkAddressError> : true_type {
+    struct is_error_code_enum<shared::models::NetworkAddressError> : true_type {
     };
 }
 
-namespace shared::http::models {
+namespace shared::models {
     class NetworkAddress {
     public:
         static std::expected<NetworkAddress, std::error_code> create(std::string value) {

@@ -30,29 +30,29 @@ namespace shared::http {
         _signals.async_wait([this](const boost::system::error_code& ec, int signalNumber) {
             if (ec)
                 return;
-            SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Received signal {}, shutting down", signalNumber);
+            SPDLOG_LOGGER_INFO(shared::logger::get("HttpServer"), "Received signal {}, shutting down", signalNumber);
             stop();
         });
 
-        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server created successfully!");
-        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server address : {}", _networkConfiguration.address.value());
-        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server port : {}", _networkConfiguration.port);
+        SPDLOG_LOGGER_INFO(shared::logger::get("HttpServer"), "Server created successfully!");
+        SPDLOG_LOGGER_INFO(shared::logger::get("HttpServer"), "Server address : {}", _networkConfiguration.address.value());
+        SPDLOG_LOGGER_INFO(shared::logger::get("HttpServer"), "Server port : {}", _networkConfiguration.port);
     }
 
     HttpServer::~HttpServer() {
-        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server destroyed successfully!");
+        SPDLOG_LOGGER_INFO(shared::logger::get("HttpServer"), "Server destroyed successfully!");
 
     }
 
     void HttpServer::run() {
-        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server run successfully!");
+        SPDLOG_LOGGER_INFO(shared::logger::get("HttpServer"), "Server run successfully!");
 
         doAccept();
         _ioContext.run();
     }
 
     void HttpServer::stop() {
-        SPDLOG_LOGGER_INFO(Logger::get("HttpServer"), "Server stop requested!");
+        SPDLOG_LOGGER_INFO(shared::logger::get("HttpServer"), "Server stop requested!");
 
         boost::system::error_code ec;
         _acceptor.close(ec);
@@ -99,9 +99,9 @@ namespace shared::http {
         const auto request = HttpMessageConverter::toHttpRequest(beastRequest);
         const auto handler = findHandler(request.method, request.path);
 
-        Response response;
+        models::Response response;
         if (!handler) {
-            response.status = Status::NotFound;
+            response.status = models::Status::NotFound;
             return HttpMessageConverter::toBeastResponse(response);
         }
 
@@ -110,7 +110,7 @@ namespace shared::http {
         return HttpMessageConverter::toBeastResponse(response);
     }
 
-    std::shared_ptr<IRequestHandler> HttpServer::findHandler(Method method, std::string_view path) const {
+    std::shared_ptr<IRequestHandler> HttpServer::findHandler(models::Method method, std::string_view path) const {
         for (const auto& [srcMethod, srcPathPrefix, srcHandler] : _handlers) {
             if (srcMethod == method && path.starts_with(srcPathPrefix))
                 return srcHandler;

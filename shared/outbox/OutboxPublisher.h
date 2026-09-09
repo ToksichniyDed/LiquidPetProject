@@ -11,16 +11,16 @@
 #include <string>
 #include <thread>
 
-#include "../messaging/IEventPublisher.h"
+#include "IEventPublisher.h"
 #include "IOutboxRepository.h"
 
-namespace outbox {
+namespace shared::outbox {
 
     class OutboxPublisher {
     public:
         OutboxPublisher(
             std::shared_ptr<IOutboxRepository> repository,
-            std::shared_ptr<messaging::IEventPublisher> publisher,
+            std::shared_ptr<shared::messaging::IEventPublisher> publisher,
             std::string topic,
             std::chrono::milliseconds pollInterval = std::chrono::milliseconds(500),
             int batchSize = 100,

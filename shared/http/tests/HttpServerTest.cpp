@@ -2,21 +2,22 @@
 // Created by DED on 04.09.2026.
 //
 
+#include <models/NetworkConfiguration.h>
 #include <gtest/gtest.h>
-#include <thread>
-#include <boost/beast.hpp>
-#include <boost/asio.hpp>
-
 #include <http/HttpServer.h>
 #include <http/Route.h>
-#include <http/NetworkConfiguration.h>
 #include <logging/Logger.h>
+
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
+#include <thread>
 
 namespace shared::http::tests {
 
     namespace beast = boost::beast;
     namespace beast_http = beast::http;
     using tcp = boost::asio::ip::tcp;
+    using namespace shared::models;
 
     class EchoHandler : public IRequestHandler {
     public:
@@ -63,7 +64,7 @@ namespace shared::http::tests {
     class HttpServerTest : public ::testing::Test {
 protected:
         static void SetUpTestSuite() {
-            Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
+            shared::logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
         }
 
         void startServerOn(std::uint16_t port) {
@@ -74,8 +75,8 @@ protected:
         models::NetworkConfiguration config{.address = address.value(), .port = testPort};
 
         std::vector<handlers::Route> routes = {
-            {shared::http::Method::Get, "/health", std::make_shared<HealthHandler>()},
-            {shared::http::Method::Post, "/echo", std::make_shared<EchoHandler>()},
+            {.method=Method::Get, .pathPrefix="/health", .handler=std::make_shared<HealthHandler>()},
+            {.method=Method::Post, .pathPrefix="/echo", .handler=std::make_shared<EchoHandler>()},
         };
 
         server = std::make_unique<HttpServer>(std::move(config), std::move(routes));

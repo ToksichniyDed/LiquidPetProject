@@ -1,3 +1,5 @@
+find_package(Boost REQUIRED CONFIG)
+
 add_library(shared_models INTERFACE)
 
 target_include_directories(shared_models INTERFACE
@@ -5,6 +7,9 @@ target_include_directories(shared_models INTERFACE
 )
 
 target_compile_features(shared_models INTERFACE cxx_std_23)
+
+target_link_libraries(shared_models INTERFACE
+    Boost::headers)
 
 if(BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)

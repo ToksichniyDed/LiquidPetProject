@@ -9,7 +9,7 @@
 
 #include "IEventPublisher.h"
 
-namespace order_service::messaging {
+namespace shared::messaging {
 
     class MockEventPublisher : public IEventPublisher {
     public:

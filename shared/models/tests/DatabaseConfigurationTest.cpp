@@ -6,7 +6,7 @@
 
 #include "DatabaseConfiguration.h"
 
-using namespace models;
+using namespace shared::models;
 
 namespace {
     struct DatabaseConfigurationTestCase {

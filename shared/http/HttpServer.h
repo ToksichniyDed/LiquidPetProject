@@ -8,7 +8,7 @@
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
-#include "NetworkConfiguration.h"
+#include <models/NetworkConfiguration.h>
 #include "Route.h"
 
 namespace shared::http {
@@ -25,7 +25,7 @@ namespace shared::http {
         void handleConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket) const;
         boost::beast::http::response<boost::beast::http::string_body> handleRequest(
             const boost::beast::http::request<boost::beast::http::string_body>& beastRequest) const;
-        std::shared_ptr<IRequestHandler> findHandler(Method method, std::string_view path) const;
+        std::shared_ptr<IRequestHandler> findHandler(models::Method method, std::string_view path) const;
 
     private:
         models::NetworkConfiguration _networkConfiguration;

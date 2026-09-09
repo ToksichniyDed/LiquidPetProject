@@ -12,7 +12,7 @@
 
 #include <spdlog/spdlog.h>
 
-namespace Logger {
+namespace shared::logger {
     inline std::vector<spdlog::sink_ptr> sinks;
     inline spdlog::level::level_enum defaultLevel = spdlog::level::info;
 

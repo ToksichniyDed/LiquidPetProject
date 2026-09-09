@@ -12,7 +12,7 @@
 
 namespace shared::http::handlers {
     struct Route {
-        Method method;
+        models::Method method;
         std::string pathPrefix;
         std::shared_ptr<IRequestHandler> handler;
     };

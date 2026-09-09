@@ -12,7 +12,7 @@ namespace {
         std::optional<std::string> fileContent;
         std::string sectionName;
         bool expectSuccess;
-        std::optional<Json::JsonParseError> expectedError;
+        std::optional<shared::json::JsonParseError> expectedError;
     };
 }
 
@@ -49,7 +49,7 @@ TEST_P(LoadSectionTest, LoadSection) {
     const auto& testCase = GetParam();
 
     const auto result =
-            Json::JsonHelper::loadSection(
+            shared::json::JsonHelper::loadSection(
                 testFilePath,
                 testCase.sectionName
             );
@@ -85,7 +85,7 @@ INSTANTIATE_TEST_SUITE_P(LoadSectionTests,
                              .fileContent = std::nullopt,
                              .sectionName = {},
                              .expectSuccess = false,
-                             .expectedError = Json::JsonParseError::InvalidPath
+                             .expectedError = shared::json::JsonParseError::InvalidPath
 
                              },
                              LoadSectionTestCase{
@@ -93,7 +93,7 @@ INSTANTIATE_TEST_SUITE_P(LoadSectionTests,
                              .fileContent = R"({"network": {"address": 0.0.0.0", "port": 8080}})",
                              .sectionName = "network",
                              .expectSuccess = false,
-                             .expectedError = Json::JsonParseError::InvalidFormat
+                             .expectedError = shared::json::JsonParseError::InvalidFormat
 
                              },
                              LoadSectionTestCase{
@@ -101,7 +101,7 @@ INSTANTIATE_TEST_SUITE_P(LoadSectionTests,
                              .fileContent = R"({"network": {"address": "0.0.0.0", "port": 8080}})",
                              .sectionName = "some section",
                              .expectSuccess = false,
-                             .expectedError = Json::JsonParseError::SectionNotFound
+                             .expectedError = shared::json::JsonParseError::SectionNotFound
                              }), [](const ::testing::TestParamInfo<LoadSectionTestCase>& info) {
                          return info.param.testName;
                          });

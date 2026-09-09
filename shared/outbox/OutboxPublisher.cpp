@@ -6,10 +6,10 @@
 
 #include <logging/Logger.h>
 
-namespace outbox {
+namespace shared::outbox {
     OutboxPublisher::OutboxPublisher(
         std::shared_ptr<IOutboxRepository> repository,
-        std::shared_ptr<messaging::IEventPublisher> publisher,
+        std::shared_ptr<shared::messaging::IEventPublisher> publisher,
         std::string topic,
         std::chrono::milliseconds pollInterval,
         const int batchSize, std::chrono::milliseconds publishTimeout) : _repository(std::move(repository)),
@@ -21,14 +21,14 @@ namespace outbox {
     }
 
     void OutboxPublisher::start() {
-        SPDLOG_LOGGER_INFO(Logger::get("OutboxPublisher"), "Starting outbox publisher");
+        SPDLOG_LOGGER_INFO(shared::logger::get("OutboxPublisher"), "Starting outbox publisher");
         _thread = std::jthread([this](std::stop_token stopToken) {
             run(stopToken);
         });
     }
 
     void OutboxPublisher::stop() {
-        SPDLOG_LOGGER_INFO(Logger::get("OutboxPublisher"), "Stop outbox publisher");
+        SPDLOG_LOGGER_INFO(shared::logger::get("OutboxPublisher"), "Stop outbox publisher");
         _thread.request_stop();
     }
 
@@ -37,14 +37,14 @@ namespace outbox {
             processBatch();
             std::this_thread::sleep_for(_pollInterval);
         }
-        SPDLOG_LOGGER_INFO(Logger::get("OutboxPublisher"), "Publisher loop finished");
+        SPDLOG_LOGGER_INFO(shared::logger::get("OutboxPublisher"), "Publisher loop finished");
     }
 
     void OutboxPublisher::processBatch() const {
         const auto entries = _repository->fetchUnpublished(_batchSize);
 
         if (!entries.has_value()) {
-            SPDLOG_LOGGER_ERROR(Logger::get("OutboxPublisher"),
+            SPDLOG_LOGGER_ERROR(shared::logger::get("OutboxPublisher"),
                                 "Fetch unpublished entries failed: {}", entries.error().message());
             return;
         }
@@ -66,7 +66,7 @@ namespace outbox {
         for (auto& [entry, result] : pending) {
 
             if (const auto waitStatus = result.wait_for(_publishTimeout); waitStatus != std::future_status::ready) {
-                SPDLOG_LOGGER_WARN(Logger::get("OutboxPublisher"),
+                SPDLOG_LOGGER_WARN(shared::logger::get("OutboxPublisher"),
                                    "Publish for outbox entry {} did not complete within {} ms, will retry next cycle",
                                    entry.id, _publishTimeout.count());
                 continue;
@@ -74,14 +74,14 @@ namespace outbox {
 
 
             if (const auto publishResult = result.get(); !publishResult.has_value()) {
-                SPDLOG_LOGGER_WARN(Logger::get("OutboxPublisher"),
+                SPDLOG_LOGGER_WARN(shared::logger::get("OutboxPublisher"),
                                    "Failed to publish outbox entry {}: {}, will retry next cycle",
                                    entry.id, publishResult.error().message());
                 continue;
             }
 
             _repository->markAsPublished(entry.id).or_else([&entry](const std::error_code& ec) {
-                SPDLOG_LOGGER_WARN(Logger::get("OutboxPublisher"),
+                SPDLOG_LOGGER_WARN(shared::logger::get("OutboxPublisher"),
                                    "Failed to mark entry {} as published: {}", entry.id, ec.message());
                 return std::expected<void, std::error_code>{std::unexpected(ec)};
             });

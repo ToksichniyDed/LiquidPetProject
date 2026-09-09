@@ -9,9 +9,9 @@
 #include <keys/DatabaseConfigurationJsonKeys.h>
 #include <json/Json.h>
 
-namespace models2json_mapper {
+namespace shared::models2json_mapper {
     using namespace models;
-    using namespace Json;
+    using namespace json;
     using namespace models2json_mapper::keys;
 
     class DatabaseConfigurationJsonMapper {

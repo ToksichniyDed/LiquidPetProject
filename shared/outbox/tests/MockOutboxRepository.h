@@ -6,10 +6,9 @@
 #define LIQUIDPETPROJECT_MOCKOUTBOXREPOSITOTY_H
 
 #include <gmock/gmock.h>
-
 #include "IOutboxRepository.h"
 
-namespace order_service::outbox {
+namespace shared::outbox {
 
     class MockOutboxRepository : public IOutboxRepository {
     public:

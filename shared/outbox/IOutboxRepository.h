@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-namespace order_service::outbox {
+namespace shared::outbox {
     enum class OutboxRepositoryError : std::int8_t {
         NotFound = 1,
         ConnectionFailure,
@@ -53,11 +53,11 @@ namespace order_service::outbox {
 
 namespace std {
     template <>
-    struct is_error_code_enum<order_service::outbox::OutboxRepositoryError> : true_type {
+    struct is_error_code_enum<shared::outbox::OutboxRepositoryError> : true_type {
     };
 }
 
-namespace order_service::outbox {
+namespace shared::outbox {
 
     struct OutboxEntry {
         std::string id;

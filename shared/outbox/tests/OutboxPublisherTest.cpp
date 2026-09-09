@@ -8,7 +8,7 @@
 #include <chrono>
 #include <future>
 
-#include "../../../shared/outbox/OutboxPublisher.h"
+#include <OutboxPublisher.h>
 #include "MockEventPublisher.h"
 #include "MockOutboxRepository.h"
 
@@ -17,10 +17,10 @@ namespace order_service::outbox {
     using ::testing::_;
     using ::testing::Return;
 
-    using outbox::MockOutboxRepository;
-    using outbox::OutboxEntry;
-    using messaging::MockEventPublisher;
-    using messaging::makeReadyFuture;
+    using shared::outbox::MockOutboxRepository;
+    using shared::outbox::OutboxEntry;
+    using shared::messaging::MockEventPublisher;
+    using shared::messaging::makeReadyFuture;
 
     class OutboxPublisherTest : public ::testing::Test {
     protected:
@@ -62,7 +62,7 @@ namespace order_service::outbox {
                 return std::expected<void, std::error_code>{};
         });
 
-        OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
         publisher.start();
 
         const auto status = markedAsPublishedFuture.wait_for(std::chrono::seconds(2));
@@ -92,14 +92,14 @@ namespace order_service::outbox {
                                                       return makeReadyFuture(
                                                           std::expected<void, std::error_code>{
                                                               std::unexpected(
-                                                                  messaging::EventPublisherError::BrokerRejected)
+                                                              shared::messaging::EventPublisherError::BrokerRejected)
                                                           });
         });
 
         // раз публикация не удалась, markAsPublished не должен вызываться вообще
         EXPECT_CALL(*_repository, markAsPublished(_)).Times(0);
 
-        OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
         publisher.start();
 
         const auto status = publishAttemptedFuture.wait_for(std::chrono::seconds(2));
@@ -122,13 +122,13 @@ namespace order_service::outbox {
                                                           }
                                                           return std::expected<
                                                               std::vector<OutboxEntry>, std::error_code>{
-                                                              std::unexpected(OutboxRepositoryError::ConnectionFailure)
+                                                              std::unexpected(shared::outbox::OutboxRepositoryError::ConnectionFailure)
                                                           };
                                                       });
 
         EXPECT_CALL(*_publisher, publish(_, _, _)).Times(0);
 
-        OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
         publisher.start();
 
         const auto status = fetchedFuture.wait_for(std::chrono::seconds(2));
@@ -175,7 +175,7 @@ namespace order_service::outbox {
         EXPECT_CALL(*_repository, markAsPublished(_))
             .WillRepeatedly(Return(std::expected<void, std::error_code>{}));
 
-        OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
         publisher.start();
 
         const auto status = bothPublishCalledFuture.wait_for(std::chrono::seconds(2));

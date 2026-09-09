@@ -11,7 +11,7 @@
 
 #include "IEventPublisher.h"
 
-namespace messaging {
+namespace shared::messaging {
     class KafkaEventPublisher : public IEventPublisher {
     public:
         explicit KafkaEventPublisher(const std::string& brokers);
