@@ -3,10 +3,6 @@ add_library(shared_http STATIC
     HttpServer.cpp)
 
 target_sources(shared_http PUBLIC
-    NetworkAddress.h
-    NetworkConfiguration.h
-    NetworkConfigurationJsonMapper.h
-    NetworkConfigurationJsonKeys.h
     Route.h
 )
 
@@ -18,7 +14,6 @@ if (BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)
 
     add_executable(shared_http_models2json_mapper_tests
-        tests/NetworkConfigurationJsonMapperTest.cpp
         tests/HttpMessageConverterTest.cpp
         tests/HttpServerTest.cpp
     )
@@ -28,6 +23,7 @@ if (BUILD_TESTING)
         shared_http
         shared_json
         shared_logging
+        shared_models
         Boost::headers
         GTest::gtest_main
     )

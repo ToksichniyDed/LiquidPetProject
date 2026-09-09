@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 
-namespace shared::http {
+namespace shared::models {
     enum class Method : std::uint8_t {
         Get,
         Post,

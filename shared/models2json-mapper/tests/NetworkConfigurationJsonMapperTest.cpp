@@ -3,11 +3,11 @@
 //
 
 #include <gtest/gtest.h>
+#include <models/NetworkConfiguration.h>
+
 #include <nlohmann/json.hpp>
 
-#include "../NetworkConfigurationJsonMapper.h"
-#include "../NetworkConfiguration.h"
-
+#include "mapper/NetworkConfigurationJsonMapper.h"
 
 namespace {
     struct NetworkConfigurationTestCase {
@@ -24,7 +24,7 @@ class NetworkConfigurationJsonMapperFromJsonTest
 TEST_P(NetworkConfigurationJsonMapperFromJsonTest, FromJson) {
     const auto& testCase = GetParam();
 
-    const auto result = shared::http::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(testCase.section);
+    const auto result = shared::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(testCase.section);
 
     if (testCase.expectSuccess) {
         ASSERT_TRUE(result.has_value());

@@ -9,7 +9,7 @@
 
 #include "DatabaseConfiguration.h"
 
-using namespace models2json_mapper;
+using namespace shared::models2json_mapper;
 
 namespace {
     nlohmann::json validDatabaseJson() {
@@ -135,7 +135,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 class DatabaseConfigurationJsonMapperToJsonTest : public ::testing::Test {
 protected:
-    static models::DatabaseConfiguration makeConfig() {
+    static DatabaseConfiguration makeConfig() {
         return DatabaseConfigurationJsonMapper::fromJson(validDatabaseJson(), "super-secret-password").value();
     }
 };

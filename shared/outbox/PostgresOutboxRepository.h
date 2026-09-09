@@ -10,7 +10,7 @@
 
 #include <memory>
 
-namespace outbox {
+namespace shared::outbox {
     class PostgresOutboxRepository : public IOutboxRepository {
     public:
         explicit PostgresOutboxRepository(const models::DatabaseConfiguration& config);

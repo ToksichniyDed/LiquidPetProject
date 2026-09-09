@@ -10,7 +10,7 @@
 #include <string>
 #include <system_error>
 
-namespace models {
+namespace shared::models {
     enum class DatabaseConfigurationError : std::uint8_t {
         EmptyHost = 1,
         EmptyDatabaseName,
@@ -50,11 +50,11 @@ namespace models {
 
 namespace std {
     template <>
-    struct is_error_code_enum<models::DatabaseConfigurationError> : true_type {
+    struct is_error_code_enum<shared::models::DatabaseConfigurationError> : true_type {
     };
 }
 
-namespace models {
+namespace shared::models {
 
     class DatabaseConfiguration {
     public:

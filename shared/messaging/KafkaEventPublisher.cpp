@@ -7,15 +7,15 @@
 #include <kafka/KafkaProducer.h>
 #include <logging/Logger.h>
 
-namespace messaging {
+namespace shared::messaging {
     using namespace kafka;
     using namespace kafka::clients::producer;
 
     class KafkaEventPublisher::Impl {
     public:
         explicit Impl(const std::string& brokers) : _producer(makeProperties(brokers)) {
-            SPDLOG_LOGGER_INFO(Logger::get("KafkaEventPublisher"), "Kafka producer created successfully!");
-            SPDLOG_LOGGER_INFO(Logger::get("KafkaEventPublisher"), "Kafka brokers: {}", brokers);
+            SPDLOG_LOGGER_INFO(shared::logger::get("KafkaEventPublisher"), "Kafka producer created successfully!");
+            SPDLOG_LOGGER_INFO(shared::logger::get("KafkaEventPublisher"), "Kafka brokers: {}", brokers);
         }
 
     public:
@@ -68,7 +68,7 @@ namespace messaging {
 
             auto deliveryCb = [resultPromise](const RecordMetadata& metadata, const Error& error) {
                 if (error) {
-                    SPDLOG_LOGGER_WARN(Logger::get("KafkaEventPublisher"),
+                    SPDLOG_LOGGER_WARN(shared::logger::get("KafkaEventPublisher"),
                                        "Message failed to be delivered: {}", error.message());
                     resultPromise->set_value(std::unexpected(mapError(error)));
                 } else {
@@ -78,7 +78,7 @@ namespace messaging {
 
             _impl->_producer.send(record, deliveryCb, KafkaProducer::SendOption::ToCopyRecordValue);
         } catch (const KafkaException& e) {
-            SPDLOG_LOGGER_ERROR(Logger::get("KafkaEventPublisher"), "Failed to send message: {}", e.what());
+            SPDLOG_LOGGER_ERROR(shared::logger::get("KafkaEventPublisher"), "Failed to send message: {}", e.what());
             resultPromise->set_value(std::unexpected(mapError(e.error())));
         }
 

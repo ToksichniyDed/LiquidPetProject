@@ -2,20 +2,21 @@
 // Created by DED on 03.09.2026.
 //
 
+#include <models/HttpMessage.h>
 #include <gtest/gtest.h>
 #include <http/HttpMessageConverter.h>
-#include <http/HttpMessage.h>
 
 namespace shared::http::tests {
 
     namespace beast_http = boost::beast::http;
+    using namespace shared::models;
 
     TEST(HttpMessageConverterTest, ToHttpRequest_MapsGetMethod) {
         beast_http::request<beast_http::string_body> beastRequest{beast_http::verb::get, "/orders/123", 11};
 
         const auto request = HttpMessageConverter::toHttpRequest(beastRequest);
 
-        EXPECT_EQ(request.method, Method::Get);
+        EXPECT_EQ(request.method, shared::models::Method::Get);
     }
 
     TEST(HttpMessageConverterTest, ToHttpRequest_MapsPostMethod) {

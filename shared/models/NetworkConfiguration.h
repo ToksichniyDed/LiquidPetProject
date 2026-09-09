@@ -5,9 +5,11 @@
 #ifndef LIQUIDPETPROJECT_NETWORKCONFIGURATION_H
 #define LIQUIDPETPROJECT_NETWORKCONFIGURATION_H
 
+#include <cstdint>
+
 #include "NetworkAddress.h"
 
-namespace shared::http::models {
+namespace shared::models {
     struct NetworkConfiguration {
         NetworkAddress address;
         uint16_t port;

@@ -7,9 +7,10 @@
 
 #include <string>
 #include <expected>
+#include <utility>
 
-namespace messaging {
-    enum class EventPublisherError {
+namespace shared::messaging {
+    enum class EventPublisherError : std::uint8_t {
         ConnectionFailure = 1,
         Timeout,
         SerializationFailure,
@@ -17,6 +18,7 @@ namespace messaging {
     };
 
     class EventPublisherErrorCategory : public std::error_category {
+    public:
         const char* name() const noexcept override { return "event_publisher"; }
 
         std::string message(int ev) const override {
@@ -41,17 +43,17 @@ namespace messaging {
     }
 
     inline std::error_code make_error_code(EventPublisherError e) {
-        return std::error_code(static_cast<int>(e), eventPublisherErrorCategory());
+        return std::error_code(std::to_underlying(e), eventPublisherErrorCategory());
     }
 }
 
 namespace std {
     template <>
-    struct is_error_code_enum<messaging::EventPublisherError> : true_type {
+    struct is_error_code_enum<shared::messaging::EventPublisherError> : true_type {
     };
 }
 
-namespace messaging {
+namespace shared::messaging {
     class IEventPublisher {
     public:
         virtual ~IEventPublisher() = default;

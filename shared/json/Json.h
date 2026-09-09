@@ -9,7 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 
-namespace Json {
+namespace shared::json {
     enum class JsonParseError {
         InvalidFormat = 1,
         InvalidPath,
@@ -55,11 +55,11 @@ namespace Json {
 
 namespace std {
     template <>
-    struct is_error_code_enum<Json::JsonParseError> : std::true_type {
+    struct is_error_code_enum<shared::json::JsonParseError> : std::true_type {
     };
 };
 
-namespace Json {
+namespace shared::json {
     class JsonHelper {
     public:
         static std::expected<nlohmann::json, std::error_code> loadSection(

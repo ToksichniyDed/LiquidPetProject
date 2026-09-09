@@ -7,8 +7,8 @@
 #include <logging/Logger.h>
 #include <pqxx/pqxx>
 
-namespace outbox {
-    using namespace repository::queries;
+namespace shared::outbox {
+    using namespace queries;
 
     namespace {
         inline constexpr auto ID = "id";
@@ -25,10 +25,10 @@ namespace outbox {
             _connection.prepare(SELECT_UNPUBLISHED_OUTBOX, SELECT_UNPUBLISHED_OUTBOX_SQL);
             _connection.prepare(MARK_OUTBOX_PUBLISHED, MARK_OUTBOX_PUBLISHED_SQL);
 
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOutboxRepository"), "Database connection successfully!");
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOutboxRepository"), "Database name : {}", config.databaseName());
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOutboxRepository"), "Database host : {}", config.host());
-            SPDLOG_LOGGER_INFO(Logger::get("PostgresOutboxRepository"), "Database port : {}", config.port());
+            SPDLOG_LOGGER_INFO(shared::logger::get("PostgresOutboxRepository"), "Database connection successfully!");
+            SPDLOG_LOGGER_INFO(shared::logger::get("PostgresOutboxRepository"), "Database name : {}", config.databaseName());
+            SPDLOG_LOGGER_INFO(shared::logger::get("PostgresOutboxRepository"), "Database host : {}", config.host());
+            SPDLOG_LOGGER_INFO(shared::logger::get("PostgresOutboxRepository"), "Database port : {}", config.port());
         }
 
     public:
@@ -37,17 +37,18 @@ namespace outbox {
 
     namespace {
 
-        std::error_code mapException(const std::exception& e) {
+    std::error_code mapException(const std::exception& e) {
+            using enum OutboxRepositoryError;
             if (dynamic_cast<const pqxx::broken_connection*>(&e))
-                return OutboxRepositoryError::ConnectionFailure;
+                return make_error_code(ConnectionFailure);
             if (dynamic_cast<const pqxx::unique_violation*>(&e) ||
                 dynamic_cast<const pqxx::foreign_key_violation*>(&e) ||
                 dynamic_cast<const pqxx::check_violation*>(&e))
-                return OutboxRepositoryError::ConstraintViolation;
+                return make_error_code(ConstraintViolation);
             if (dynamic_cast<const pqxx::in_doubt_error*>(&e))
-                return OutboxRepositoryError::Timeout;
+                return make_error_code(Timeout);
 
-            return OutboxRepositoryError::SerializationFailure;
+            return make_error_code(SerializationFailure);
         }
 
         OutboxEntry mapRow(const pqxx::row_ref& row) {

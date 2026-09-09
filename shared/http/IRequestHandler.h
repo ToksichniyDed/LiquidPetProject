@@ -5,13 +5,13 @@
 #ifndef LIQUIDPETPROJECT_IREQUESTHANDLER_H
 #define LIQUIDPETPROJECT_IREQUESTHANDLER_H
 
-#include "http/HttpMessage.h"
+#include <models/HttpMessage.h>
 
 namespace shared::http {
     class IRequestHandler {
 public:
        virtual ~IRequestHandler() = default;
-       virtual Response handle(const Request& request) = 0;
+       virtual models::Response handle(const models::Request& request) = 0;
 };
 }
 

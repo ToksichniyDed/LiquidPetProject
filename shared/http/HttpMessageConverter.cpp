@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace shared::http {
-    Request HttpMessageConverter::toHttpRequest(
+        models::Request HttpMessageConverter::toHttpRequest(
         const boost::beast::http::request<boost::beast::http::string_body>& request) {
         const auto method = toHttpMethod(request.method());
 
@@ -15,7 +15,7 @@ namespace shared::http {
     }
 
     boost::beast::http::response<boost::beast::http::string_body> HttpMessageConverter::toBeastResponse(
-        const Response& response) {
+        const models::Response& response) {
         boost::beast::http::response<boost::beast::http::string_body> beastResponse;
 
         beastResponse.result(static_cast<boost::beast::http::status>(std::to_underlying(response.status)));
@@ -26,7 +26,7 @@ namespace shared::http {
     }
 
     boost::beast::http::request<boost::beast::http::string_body> HttpMessageConverter::toBeastRequest(
-        const Request& request) {
+        const models::Request& request) {
         boost::beast::http::request<boost::beast::http::string_body> beastRequest;
 
         beastRequest.method(toVerb(request.method));
@@ -38,17 +38,17 @@ namespace shared::http {
         return beastRequest;
     }
 
-    Response HttpMessageConverter::toHttpResponse(const boost::beast::http::response<boost::beast::http::string_body>& response) {
+    models::Response HttpMessageConverter::toHttpResponse(const boost::beast::http::response<boost::beast::http::string_body>& response) {
 
         return {
-            .status = static_cast<Status>(response.result_int()),
+            .status = static_cast<models::Status>(response.result_int()),
             .body = response.body()
         };
     }
 
-    boost::beast::http::verb HttpMessageConverter::toVerb(Method method) {
+    boost::beast::http::verb HttpMessageConverter::toVerb(models::Method method) {
         switch (method) {
-                using enum Method;
+                using enum models::Method;
             case Get:
                 return boost::beast::http::verb::get;
             case Post:
@@ -58,9 +58,9 @@ namespace shared::http {
         }
     }
 
-    Method HttpMessageConverter::toHttpMethod(const boost::beast::http::verb verb) {
+    models::Method HttpMessageConverter::toHttpMethod(const boost::beast::http::verb verb) {
         switch (verb) {
-                using enum Method;
+                using enum models::Method;
             case boost::beast::http::verb::get:
                 return Get;
             case boost::beast::http::verb::post:
