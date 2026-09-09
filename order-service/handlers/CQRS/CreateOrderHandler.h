@@ -11,6 +11,7 @@
 
 namespace order_service::handlers {
     using namespace shared::http;
+    using namespace shared::models;
     using namespace order_system::models;
     using namespace order_system::repository;
     using namespace order_system::models2json_mapper;

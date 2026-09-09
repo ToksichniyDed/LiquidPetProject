@@ -14,7 +14,7 @@
 
 namespace order_system::models2json_mapper {
     using namespace order_system::models;
-    using namespace Json;
+    using namespace shared::json;
     using namespace models2json_mapper::keys;
 
     class OrderItemJsonMapper {

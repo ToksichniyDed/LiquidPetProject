@@ -3,27 +3,28 @@
 //
 
 #include <filesystem>
-#include <iostream>
+#include <expected>
 
-#include <http/NetworkConfiguration.h>
-#include <http/Route.h>
-#include <http/HttpServer.h>
-#include "handlers/RoutePaths.h"
-#include <logging/Logger.h>
+#include <IOrderRepository.h>
+#include <PostgresOrderRepository.h>
+#include <RoutePaths.h>
 #include <CQRS/CreateOrderHandler.h>
 #include <CQRS/GetOrderHandler.h>
 #include <CQRS/HealthHandler.h>
-#include "PostgresOrderRepository.h"
-#include <http/NetworkConfigurationJsonMapper.h>
-#include <mapper/DatabaseConfigurationJsonMapper.h>
-#include "CLI/App.hpp"
-#include "CLI/CLI.hpp"
-#include "CLI/Macros.hpp"
-#include "outbox/IEventPublisher.h"
-#include "outbox/IOutboxRepository.h"
-#include "outbox/KafkaEventPublisher.h"
-#include "outbox/OutboxPublisher.h"
-#include "outbox/PostgresOutboxRepository.h"
+
+#include <logging/Logger.h>
+#include <http/Route.h>
+#include <http/HttpServer.h>
+#include <models/NetworkConfiguration.h>
+#include <models/DatabaseConfiguration.h>
+#include <models2json-mapper/mapper/NetworkConfigurationJsonMapper.h>
+#include <models2json-mapper/mapper/DatabaseConfigurationJsonMapper.h>
+#include <messaging/IEventPublisher.h>
+#include <messaging/KafkaEventPublisher.h>
+#include <outbox/OutboxPublisher.h>
+#include <outbox/PostgresOutboxRepository.h>
+
+#include <CLI/CLI.hpp>
 
 namespace {
 
@@ -45,48 +46,48 @@ namespace {
 
     }
 
-    std::expected<shared::http::models::NetworkConfiguration, std::error_code> loadNetworkConfiguration(
+    std::expected<shared::models::NetworkConfiguration, std::error_code> loadNetworkConfiguration(
         const std::filesystem::path& configPath,
         const std::optional<std::string>& addressOverride,
         const std::optional<std::uint16_t>& portOverride) {
 
-        auto networkSection = Json::JsonHelper::loadSection(configPath, "network");
+        auto networkSection = shared::json::JsonHelper::loadSection(configPath, "network");
         if (!networkSection.has_value()) {
             return std::unexpected(networkSection.error());
         }
 
-        auto networkConfiguration = shared::http::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
+        auto networkConfiguration = shared::models2json_mapper::NetworkConfigurationJsonMapper::fromJson(
             networkSection.value());
         if (!networkConfiguration.has_value()) {
             return std::unexpected(networkConfiguration.error());
         }
 
         if (addressOverride.has_value()) {
-            auto overriddenAddress = shared::http::models::NetworkAddress::create(*addressOverride);
+            auto overriddenAddress = shared::models::NetworkAddress::create(*addressOverride);
             if (!overriddenAddress.has_value()) {
                 return std::unexpected(overriddenAddress.error());
             }
             networkConfiguration.value().address = overriddenAddress.value();
-            SPDLOG_LOGGER_INFO(Logger::get("main"), "Network address overridden via CLI: {}", *addressOverride);
+            SPDLOG_LOGGER_INFO(shared::logger::get("main"), "Network address overridden via CLI: {}", *addressOverride);
         }
 
         if (portOverride.has_value()) {
             networkConfiguration.value().port = *portOverride;
-            SPDLOG_LOGGER_INFO(Logger::get("main"), "Network port overridden via CLI: {}", *portOverride);
+            SPDLOG_LOGGER_INFO(shared::logger::get("main"), "Network port overridden via CLI: {}", *portOverride);
         }
 
         return networkConfiguration.value();
     }
 
-    std::expected<order_system::models::DatabaseConfiguration, std::error_code> loadDatabaseConfiguration(
+    std::expected<shared::models::DatabaseConfiguration, std::error_code> loadDatabaseConfiguration(
         const std::filesystem::path& configPath, const std::string& password) {
 
-        auto databaseSection = Json::JsonHelper::loadSection(configPath, "database");
+        auto databaseSection = shared::json::JsonHelper::loadSection(configPath, "database");
         if (!databaseSection.has_value()) {
             return std::unexpected(databaseSection.error());
         }
 
-        return order_system::models2json_mapper::DatabaseConfigurationJsonMapper::fromJson(
+        return shared::models2json_mapper::DatabaseConfigurationJsonMapper::fromJson(
             databaseSection.value(), password);
     }
 
@@ -95,17 +96,17 @@ namespace {
 
         return {
             {
-                .method = shared::http::Method::Post,
+                .method = shared::models::Method::Post,
                 .pathPrefix = order_service::handlers::paths::ORDERS,
                 .handler = std::make_shared<order_service::handlers::CreateOrderHandler>(repository)
             },
             {
-                .method = shared::http::Method::Get,
+                .method = shared::models::Method::Get,
                 .pathPrefix = order_service::handlers::paths::ORDERS_PREFIX,
                 .handler = std::make_shared<order_service::handlers::GetOrderHandler>(repository)
             },
             {
-                .method = shared::http::Method::Get,
+                .method = shared::models::Method::Get,
                 .pathPrefix = order_service::handlers::paths::HEALTH,
                 .handler = std::make_shared<order_service::handlers::HealthHandler>()
             },
@@ -115,7 +116,7 @@ namespace {
     template <typename T>
     T unwrapOrExit(std::expected<T, std::error_code> result) {
         if (!result.has_value()) {
-            SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error {} : {}",
+            SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "Error {} : {}",
                                    result.error().category().name(), result.error().message());
             std::exit(1);
         }
@@ -131,17 +132,17 @@ int main(const int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    Logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
+    shared::logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
 
     const char* dbPassword = std::getenv("DB_PASSWORD");
     if (!dbPassword) {
-        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "DB_PASSWORD environment variable is not set");
+        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "DB_PASSWORD environment variable is not set");
         return 1;
     }
 
     const char* kafkaBrokers = std::getenv("KAFKA_BROKERS");
     if (!kafkaBrokers) {
-        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "KAFKA_BROKERS environment variable is not set");
+        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "KAFKA_BROKERS environment variable is not set");
         return 1;
     }
 
@@ -152,28 +153,28 @@ int main(const int argc, char* argv[]) {
         loadDatabaseConfiguration(options.configPath, dbPassword));
 
     std::shared_ptr<order_system::repository::IOrderRepository> repository;
-    std::shared_ptr<order_service::outbox::IOutboxRepository> outboxRepository;
+    std::shared_ptr<shared::outbox::IOutboxRepository> outboxRepository;
 
     try {
         repository = std::make_shared<order_system::repository::PostgresOrderRepository>(databaseConfiguration);
-        outboxRepository = std::make_shared<order_service::outbox::PostgresOutboxRepository>(databaseConfiguration);
+        outboxRepository = std::make_shared<shared::outbox::PostgresOutboxRepository>(databaseConfiguration);
     } catch (const std::exception& e) {
-        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error: {}", e.what());
+        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "Error: {}", e.what());
         return 1;
     }
 
-    std::shared_ptr<order_service::messaging::IEventPublisher> eventPublisher;
+    std::shared_ptr<shared::messaging::IEventPublisher> eventPublisher;
     try {
-        eventPublisher = std::make_shared<order_service::messaging::KafkaEventPublisher>(kafkaBrokers);
+        eventPublisher = std::make_shared<shared::messaging::KafkaEventPublisher>(kafkaBrokers);
     } catch (const std::exception& e) {
-        SPDLOG_LOGGER_CRITICAL(Logger::get("main"), "Error creating Kafka producer: {}", e.what());
+        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "Error creating Kafka producer: {}", e.what());
         return 1;
     }
 
-    order_service::outbox::OutboxPublisher outboxPublisher(outboxRepository, eventPublisher, "orders.events");
+    shared::outbox::OutboxPublisher outboxPublisher(outboxRepository, eventPublisher, "orders.events");
     outboxPublisher.start();
 
-    order_service::handlers::HttpServer server{std::move(networkConfiguration), buildRoutes(repository)};
+    shared::http::HttpServer server{std::move(networkConfiguration), buildRoutes(repository)};
     server.run();
 
     outboxPublisher.stop();
