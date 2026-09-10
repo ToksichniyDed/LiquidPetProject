@@ -12,47 +12,14 @@
 #include <system_error>
 #include <vector>
 
-#include "StrongID.h"
+#include <models/OrderIds.h>
 #include "Money.h"
 
 namespace order_system::models {
 
-    struct OrderIdTag {
-    };
-
-    struct UserIdTag {
-    };
-
-    struct ProductIdTag {
-    };
-
-    namespace detail {
-        inline bool isValidUuid(const std::string& value) {
-            static const std::regex pattern(
-                R"(^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$)"
-            );
-            return std::regex_match(value, pattern);
-        }
-    }
-
-    template <>
-    struct IdTraits<OrderIdTag> {
-        static bool isValid(const std::string& v) { return detail::isValidUuid(v); }
-    };
-
-    template <>
-    struct IdTraits<UserIdTag> {
-        static bool isValid(const std::string& v) { return detail::isValidUuid(v); }
-    };
-
-    template <>
-    struct IdTraits<ProductIdTag> {
-        static bool isValid(const std::string& v) { return detail::isValidUuid(v); }
-    };
-
-    using OrderId = StrongID<OrderIdTag>;
-    using UserId = StrongID<UserIdTag>;
-    using ProductId = StrongID<ProductIdTag>;
+    using OrderId = shared::models::StrongID<shared::models::OrderIdTag>;
+    using UserId = shared::models::StrongID<shared::models::UserIdTag>;
+    using ProductId = shared::models::StrongID<shared::models::ProductIdTag>;
 
     enum class OrderItemError : std::uint8_t {
         InvalidQuantity = 1,

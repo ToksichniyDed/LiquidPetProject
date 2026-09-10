@@ -16,6 +16,23 @@ services:
       timeout: 3s
       retries: 5
 
+  worker-postgres:
+    image: postgres:18
+    container_name: worker-postgres
+    environment:
+      POSTGRES_DB: ${WORKER_POSTGRES_DB:-worker}
+      POSTGRES_USER: ${WORKER_POSTGRES_USER:-worker}
+      POSTGRES_PASSWORD: ${WORKER_POSTGRES_PASSWORD:-worker}
+    ports:
+      - "5433:5432"
+    volumes:
+      - worker_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${WORKER_POSTGRES_USER:-worker} -d ${WORKER_POSTGRES_DB:-worker}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   kafka:
     image: apache/kafka:latest
     container_name: kafka
@@ -50,4 +67,5 @@ services:
 
 volumes:
   pgdata:
+  worker_pgdata:
   kafka_data:
