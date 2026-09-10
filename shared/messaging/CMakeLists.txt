@@ -1,10 +1,14 @@
 find_package(modern-cpp-kafka REQUIRED CONFIG)
 
 add_library(shared_messaging STATIC
-KafkaEventPublisher.cpp)
+consumer/KafkaEventConsumer.cpp
+producer/KafkaEventPublisher.cpp)
 
 target_sources(shared_messaging PUBLIC
-IEventPublisher.h)
+consumer/IEventConsumer.h
+consumer/IEventHandler.h
+producer/IEventPublisher.h
+)
 
 target_include_directories(shared_messaging INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}

@@ -21,6 +21,7 @@ namespace shared::outbox {
     };
 
     class OutboxRepositoryErrorCategory : public std::error_category {
+        public:
         const char* name() const noexcept override { return "outbox_repository"; }
 
         std::string message(int ev) const override {

@@ -19,8 +19,7 @@
 #include <models/DatabaseConfiguration.h>
 #include <models2json-mapper/mapper/NetworkConfigurationJsonMapper.h>
 #include <models2json-mapper/mapper/DatabaseConfigurationJsonMapper.h>
-#include <messaging/IEventPublisher.h>
-#include <messaging/KafkaEventPublisher.h>
+#include <messaging/producer/KafkaEventPublisher.h>
 #include <outbox/OutboxPublisher.h>
 #include <outbox/PostgresOutboxRepository.h>
 
@@ -171,7 +170,7 @@ int main(const int argc, char* argv[]) {
         return 1;
     }
 
-    shared::outbox::OutboxPublisher outboxPublisher(outboxRepository, eventPublisher, "orders.events");
+    shared::outbox::OutboxPublisher outboxPublisher(outboxRepository, eventPublisher, "orders.created");
     outboxPublisher.start();
 
     shared::http::HttpServer server{std::move(networkConfiguration), buildRoutes(repository)};

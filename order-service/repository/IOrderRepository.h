@@ -20,6 +20,7 @@ namespace order_system::repository {
     };
 
     class RepositoryErrorCategory : public std::error_category {
+        public:
         const char* name() const noexcept override { return "repository"; }
 
         std::string message(int ev) const override {
