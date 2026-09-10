@@ -7,7 +7,7 @@
 
 #include <gmock/gmock.h>
 
-#include "IEventPublisher.h"
+#include "../../messaging/producer/IEventPublisher.h"
 
 namespace shared::messaging {
 
