@@ -6,6 +6,8 @@ target_include_directories(order_models INTERFACE
 
 target_compile_features(order_models INTERFACE cxx_std_23)
 
+target_link_libraries(order_models INTERFACE shared_models shared_include_paths)
+
 if(BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)
     find_package(nlohmann_json REQUIRED CONFIG)

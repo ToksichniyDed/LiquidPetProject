@@ -10,7 +10,7 @@
 #include <string>
 #include <system_error>
 
-namespace order_system::models {
+namespace shared::models {
 
     template <typename Tag>
     struct IdTraits;
@@ -78,14 +78,14 @@ namespace order_system::models {
 
 namespace std {
     template <typename Tag>
-    struct hash<order_system::models::StrongID<Tag>> {
-        std::size_t operator()(const order_system::models::StrongID<Tag>& id) const noexcept {
+    struct hash<shared::models::StrongID<Tag>> {
+        std::size_t operator()(const shared::models::StrongID<Tag>& id) const noexcept {
             return std::hash<std::string>{}(id.value());
         }
     };
 
     template <>
-    struct is_error_code_enum<order_system::models::StrongIdError> : true_type {
+    struct is_error_code_enum<shared::models::StrongIdError> : true_type {
     };
 }
 
