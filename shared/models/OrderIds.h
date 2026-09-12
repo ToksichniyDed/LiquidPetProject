@@ -15,6 +15,7 @@ namespace shared::models {
 struct OrderIdTag {};
 struct UserIdTag {};
 struct ProductIdTag {};
+struct OutboxEventIdTag {};
 
 namespace detail {
 inline bool isValidUuid(const std::string& value) {
@@ -38,9 +39,15 @@ struct IdTraits<ProductIdTag> {
     static bool isValid(const std::string& v) { return detail::isValidUuid(v); }
 };
 
+template <>
+struct IdTraits<OutboxEventIdTag> {
+    static bool isValid(const std::string& v) { return detail::isValidUuid(v); }
+};
+
 using OrderId = StrongID<OrderIdTag>;
 using UserId = StrongID<UserIdTag>;
 using ProductId = StrongID<ProductIdTag>;
+using OutboxEventId = StrongID<OutboxEventIdTag>;
 
 }  // namespace shared::models
 

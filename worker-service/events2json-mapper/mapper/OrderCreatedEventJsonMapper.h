@@ -19,7 +19,11 @@ namespace worker_service::events {
 class OrderCreatedEventJsonMapper {
    public:
     static std::expected<OrderCreatedEvent, std::error_code> fromJson(const nlohmann::json& json) {
-        auto eventId = shared::json::JsonHelper::getValue<std::int64_t>(json, keys::EVENT_ID);
+        auto eventIdResult = shared::json::JsonHelper::getValue<std::string>(json, keys::EVENT_ID);
+        if (!eventIdResult.has_value())
+            return std::unexpected(eventIdResult.error());
+
+        auto eventId = shared::models::OutboxEventId::create(std::move(eventIdResult.value()));
         if (!eventId.has_value())
             return std::unexpected(eventId.error());
 
@@ -53,7 +57,7 @@ class OrderCreatedEventJsonMapper {
     static nlohmann::json toJson(const OrderCreatedEvent& event) {
         nlohmann::json json;
 
-        json[keys::EVENT_ID] = event.eventId;
+        json[keys::EVENT_ID] = event.eventId.value();
         json[keys::ORDER_ID] = event.orderId.value();
         json[keys::USER_ID] = event.userId.value();
 

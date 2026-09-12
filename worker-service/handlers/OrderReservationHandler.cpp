@@ -18,9 +18,18 @@ OrderReservationHandler::OrderReservationHandler(repository::IWorkerRepository& 
     : _workerRepository(workerRepository), _orderProcessor(orderProcessor) {}
 
 bool OrderReservationHandler::handle(const std::string& payload) {
-    auto eventResult = events::OrderCreatedEventJsonMapper::fromJson(nlohmann::json::parse(payload, nullptr, false));
+    nlohmann::json json;
+    try {
+        json = nlohmann::json::parse(payload);
+    } catch (const nlohmann::json::parse_error&) {
+        SPDLOG_LOGGER_ERROR(get("OrderReservationHandler"), "Malformed JSON, skipping message");
+        return true;
+    }
+
+    const auto eventResult = events::OrderCreatedEventJsonMapper::fromJson(json);
     if (!eventResult.has_value()) {
-        SPDLOG_LOGGER_ERROR(get("OrderReservationHandler"), "Failed to parse OrderCreatedEvent, skipping message");
+        SPDLOG_LOGGER_ERROR(get("OrderReservationHandler"), "Failed to parse OrderCreatedEvent: {}",
+                             eventResult.error().message());
         return true;
     }
 
@@ -34,21 +43,21 @@ bool OrderReservationHandler::handle(const std::string& payload) {
     const events::OrderReservedEvent reservedEvent{.orderId = event.orderId};
     const auto reservedPayload = events::OrderReservedEventJsonMapper::toJson(reservedEvent).dump();
 
-    auto repositoryResult = _workerRepository.recordReservationIfNew(repository::ReservationRecord{
+    const auto repositoryResult = _workerRepository.recordReservationIfNew(repository::ReservationRecord{
         .eventId = event.eventId,
-        .aggregateId = event.orderId.value(),
+        .aggregateId = event.orderId,
         .eventType = "OrderReserved",
         .payload = reservedPayload,
     });
 
     if (!repositoryResult.has_value()) {
         SPDLOG_LOGGER_ERROR(get("OrderReservationHandler"), "Failed to record reservation for eventId={}",
-                            event.eventId);
+                            event.eventId.value());
         return false;
     }
 
     if (!repositoryResult.value()) {
-        SPDLOG_LOGGER_INFO(get("OrderReservationHandler"), "eventId={} already processed, skipping", event.eventId);
+        SPDLOG_LOGGER_INFO(get("OrderReservationHandler"), "eventId={} already processed, skipping", event.eventId.value());
     }
 
     return true;
