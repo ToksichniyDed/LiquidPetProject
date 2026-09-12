@@ -17,7 +17,7 @@ OrderReservationHandler::OrderReservationHandler(repository::IWorkerRepository& 
                                                  processing::IOrderProcessor& orderProcessor)
     : _workerRepository(workerRepository), _orderProcessor(orderProcessor) {}
 
-bool OrderReservationHandler::handle(const std::string& payload) {
+bool OrderReservationHandler::handle(const std::string& payload, const shared::messaging::MessageMetadata& metadata) {
     nlohmann::json json;
     try {
         json = nlohmann::json::parse(payload);
@@ -44,7 +44,7 @@ bool OrderReservationHandler::handle(const std::string& payload) {
     const auto reservedPayload = events::OrderReservedEventJsonMapper::toJson(reservedEvent).dump();
 
     const auto repositoryResult = _workerRepository.recordReservationIfNew(repository::ReservationRecord{
-        .eventId = event.eventId,
+        .eventId = metadata.eventId,
         .aggregateId = event.orderId,
         .eventType = "OrderReserved",
         .payload = reservedPayload,
@@ -52,12 +52,12 @@ bool OrderReservationHandler::handle(const std::string& payload) {
 
     if (!repositoryResult.has_value()) {
         SPDLOG_LOGGER_ERROR(get("OrderReservationHandler"), "Failed to record reservation for eventId={}",
-                            event.eventId.value());
+                            metadata.eventId.value());
         return false;
     }
 
     if (!repositoryResult.value()) {
-        SPDLOG_LOGGER_INFO(get("OrderReservationHandler"), "eventId={} already processed, skipping", event.eventId.value());
+        SPDLOG_LOGGER_INFO(get("OrderReservationHandler"), "eventId={} already processed, skipping", metadata.eventId.value());
     }
 
     return true;

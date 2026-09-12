@@ -10,9 +10,11 @@
 #include <string>
 
 #include "IEventPublisher.h"
+#include "messaging/PublishRequest.h"
 
 namespace shared::messaging {
-    class KafkaEventPublisher : public IEventPublisher {
+
+class KafkaEventPublisher : public IEventPublisher {
     public:
         explicit KafkaEventPublisher(const std::string& brokers);
         ~KafkaEventPublisher() override;
@@ -20,8 +22,7 @@ namespace shared::messaging {
         KafkaEventPublisher(const KafkaEventPublisher&) = delete;
         KafkaEventPublisher& operator=(const KafkaEventPublisher&) = delete;
 
-        [[nodiscard]] std::future<std::expected<void, std::error_code>> publish(
-            const std::string& topic, const std::string& key, const std::string& payload) override;
+        [[nodiscard]] std::future<std::expected<void, std::error_code>> publish(const PublishRequest& request) override;
 
     private:
         class Impl;

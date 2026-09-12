@@ -5,10 +5,11 @@
 #ifndef LIQUIDPETPROJECT_POSTGRESOUTBOXREPOSITORY_H
 #define LIQUIDPETPROJECT_POSTGRESOUTBOXREPOSITORY_H
 
-#include <models/DatabaseConfiguration.h>
-#include "IOutboxRepository.h"
-
 #include <memory>
+
+#include "IOutboxRepository.h"
+#include "models/OrderIds.h"
+#include <models/DatabaseConfiguration.h>
 
 namespace shared::outbox {
     class PostgresOutboxRepository : public IOutboxRepository {
@@ -22,7 +23,7 @@ namespace shared::outbox {
         [[nodiscard]] std::expected<std::vector<OutboxEntry>, std::error_code> fetchUnpublished(
             int limit) override;
         [[nodiscard]] std::expected<void, std::error_code> markAsPublished(
-            const std::string& entryId) override;
+            const models::OutboxEventId& entryId) override;
 
     private:
         class Impl;

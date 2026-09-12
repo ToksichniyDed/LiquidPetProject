@@ -7,14 +7,14 @@
 
 #include <gmock/gmock.h>
 
-#include "../../messaging/producer/IEventPublisher.h"
+#include "producer/IEventPublisher.h"
 
 namespace shared::messaging {
 
     class MockEventPublisher : public IEventPublisher {
     public:
         MOCK_METHOD((std::future<std::expected<void, std::error_code>>), publish,
-                    (const std::string& topic, const std::string& key, const std::string& payload), (override));
+                    (const PublishRequest& request), (override));
     };
 
     inline std::future<std::expected<void, std::error_code>> makeReadyFuture(

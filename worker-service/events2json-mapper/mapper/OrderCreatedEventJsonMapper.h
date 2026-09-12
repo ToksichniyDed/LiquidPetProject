@@ -19,14 +19,6 @@ namespace worker_service::events {
 class OrderCreatedEventJsonMapper {
    public:
     static std::expected<OrderCreatedEvent, std::error_code> fromJson(const nlohmann::json& json) {
-        auto eventIdResult = shared::json::JsonHelper::getValue<std::string>(json, keys::EVENT_ID);
-        if (!eventIdResult.has_value())
-            return std::unexpected(eventIdResult.error());
-
-        auto eventId = shared::models::OutboxEventId::create(std::move(eventIdResult.value()));
-        if (!eventId.has_value())
-            return std::unexpected(eventId.error());
-
         auto orderIdString = shared::json::JsonHelper::getValue<std::string>(json, keys::ORDER_ID);
         if (!orderIdString.has_value())
             return std::unexpected(orderIdString.error());
@@ -48,16 +40,14 @@ class OrderCreatedEventJsonMapper {
             return std::unexpected(items.error());
 
         return OrderCreatedEvent{
-            .eventId = eventId.value(),
             .orderId = std::move(orderId.value()),
             .userId = std::move(userId.value()),
-            .items = std::move(items.value()),
+            .items = std::move(items.value())
         };
     }
     static nlohmann::json toJson(const OrderCreatedEvent& event) {
         nlohmann::json json;
 
-        json[keys::EVENT_ID] = event.eventId.value();
         json[keys::ORDER_ID] = event.orderId.value();
         json[keys::USER_ID] = event.userId.value();
 

@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "IEventConsumer.h"
-#include <KafkaConsumerConfiguration.h>
+#include <models/KafkaConsumerConfiguration.h>
 
 namespace shared::messaging {
     class KafkaEventConsumer : public IEventConsumer {

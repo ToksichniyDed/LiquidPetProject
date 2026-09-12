@@ -15,7 +15,7 @@ namespace shared::outbox {
         MOCK_METHOD((std::expected<std::vector<OutboxEntry>, std::error_code>), fetchUnpublished,
                     (int limit), (override));
         MOCK_METHOD((std::expected<void, std::error_code>), markAsPublished,
-                    (const std::string& entryId), (override));
+                    (const models::OutboxEventId& entryId), (override));
     };
 
 }

@@ -9,6 +9,8 @@
 #include <expected>
 #include <utility>
 
+#include <PublishRequest.h>
+
 namespace shared::messaging {
     enum class EventPublisherError : std::uint8_t {
         ConnectionFailure = 1,
@@ -59,9 +61,7 @@ namespace shared::messaging {
         virtual ~IEventPublisher() = default;
 
         [[nodiscard]] virtual std::future<std::expected<void, std::error_code>> publish(
-            const std::string& topic,
-            const std::string& key,
-            const std::string& payload) = 0;
+            const PublishRequest& request) = 0;
     };
 
 }

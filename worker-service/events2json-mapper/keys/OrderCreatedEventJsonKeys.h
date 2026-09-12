@@ -7,7 +7,6 @@
 
 namespace worker_service::events::keys {
 
-inline constexpr auto EVENT_ID = "eventId";
 inline constexpr auto ORDER_ID = "orderId";
 inline constexpr auto USER_ID = "userId";
 inline constexpr auto ITEMS = "items";

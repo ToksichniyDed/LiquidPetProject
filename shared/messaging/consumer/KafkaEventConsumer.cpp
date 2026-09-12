@@ -6,6 +6,9 @@
 
 #include <kafka/KafkaConsumer.h>
 #include <logging/Logger.h>
+#include <messaging/MessageMetadata.h>
+
+#include "outbox/OutboxPublisher.h"
 
 namespace shared::messaging
 {
@@ -35,7 +38,36 @@ namespace shared::messaging
 
             const std::string payload(static_cast<const char*>(record.value().data()), record.value().size());
 
-            if (handler.handle(payload))
+            std::string eventIdRaw, eventType;
+            for (const auto& header : record.headers())
+            {
+                const std::string headerValue(static_cast<const char*>(header.value.data()), header.value.size());
+
+                if (header.key == "eventId")
+                {
+                    eventIdRaw = headerValue;
+                }
+                else if (header.key == "eventType")
+                {
+                    eventType = headerValue;
+                }
+            }
+
+            auto eventIdResult = models::OutboxEventId::create(eventIdRaw);
+            if (!eventIdResult.has_value())
+            {
+                SPDLOG_LOGGER_ERROR(shared::logger::get("KafkaEventConsumer"),
+                                     "Message missing valid eventId header, skipping (offset will be committed)");
+                _consumer.commitSync(record);  // битые метаданные не ретраить бесконечно
+                return;
+            }
+
+            const MessageMetadata metadata{
+                .eventId = std::move(eventIdResult.value()),
+                .eventType = eventType,
+            };
+
+            if (handler.handle(payload, metadata))
             {
                 _consumer.commitSync(record);
             }

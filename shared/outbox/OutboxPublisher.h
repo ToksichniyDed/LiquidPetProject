@@ -11,7 +11,7 @@
 #include <string>
 #include <thread>
 
-#include "producer/IEventPublisher.h"
+#include <producer/IEventPublisher.h>
 #include "IOutboxRepository.h"
 
 namespace shared::outbox {
