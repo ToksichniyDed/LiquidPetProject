@@ -49,16 +49,21 @@ std::error_code mapException(const std::exception& e) {
 PostgresWorkerRepository::PostgresWorkerRepository(const shared::models::DatabaseConfiguration& configuration)
     : _impl(std::make_unique<Impl>(configuration)) {}
 
+PostgresWorkerRepository::~PostgresWorkerRepository() = default;
+
 std::expected<bool, std::error_code> PostgresWorkerRepository::recordReservationIfNew(const ReservationRecord& record) {
     try {
         pqxx::work work(_impl->_connection);
 
-        if (auto processResult = work.exec(pqxx::prepped{queries::INSERT_PROCESSED_EVENT}, pqxx::params{std::to_string(record.eventId)}); processResult.affected_rows() == 0) {
+        if (auto processResult =
+                work.exec(pqxx::prepped{queries::INSERT_PROCESSED_EVENT}, pqxx::params{record.eventId.value()});
+            processResult.affected_rows() == 0) {
             work.abort();
             return false;
         }
 
-        auto outboxResult = work.exec(pqxx::prepped{queries::INSERT_OUTBOX_EVENT}, pqxx::params{record.aggregateId, record.eventType, record.payload});
+        auto outboxResult = work.exec(pqxx::prepped{queries::INSERT_OUTBOX_EVENT},
+                                      pqxx::params{record.aggregateId.value(), record.eventType, record.payload});
 
         work.commit();
 

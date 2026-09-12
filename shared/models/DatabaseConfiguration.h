@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <regex>
 #include <string>
 #include <system_error>
 
@@ -15,7 +16,8 @@ namespace shared::models {
         EmptyHost = 1,
         EmptyDatabaseName,
         EmptyUser,
-        InvalidPort
+        InvalidPort,
+        InvalidUrl
     };
 
     class DatabaseConfigurationErrorCategory : public std::error_category {
@@ -32,6 +34,8 @@ namespace shared::models {
                     return "empty user";
                 case DatabaseConfigurationError::InvalidPort:
                     return "invalid port";
+                case DatabaseConfigurationError::InvalidUrl:
+                    return "invalid url";
                 default:
                     return "unknown database config error";
             }
@@ -75,6 +79,25 @@ namespace shared::models {
                 std::move(host), port, std::move(databaseName),
                 std::move(user), std::move(password), useSsl
             };
+        }
+
+        static std::expected<DatabaseConfiguration, std::error_code> fromUrl(const std::string& url) {
+            static const std::regex pattern(
+                R"(^postgres(?:ql)?://([^:]+):([^@]*)@([^:/]+):(\d+)/([^?]+)(?:\?sslmode=(\w+))?$)");
+
+            std::smatch match;
+            if (!std::regex_match(url, match, pattern)) {
+                return std::unexpected(DatabaseConfigurationError::InvalidUrl);
+            }
+
+            const auto user = match[1].str();
+            const auto password = match[2].str();
+            const auto host = match[3].str();
+            const auto port = static_cast<std::uint16_t>(std::stoi(match[4].str()));
+            const auto databaseName = match[5].str();
+            const bool useSsl = match[6].matched && match[6].str() != "disable";
+
+            return create(host, port, databaseName, user, password, useSsl);
         }
 
         std::string toConnectionString() const {

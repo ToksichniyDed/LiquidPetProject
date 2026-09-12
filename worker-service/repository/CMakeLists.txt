@@ -15,7 +15,6 @@ target_sources(worker_repository PUBLIC
 target_link_libraries(worker_repository PRIVATE
     worker_events2json_mapper
     worker_events
-    worker_models
 
     shared_logging
     shared_models

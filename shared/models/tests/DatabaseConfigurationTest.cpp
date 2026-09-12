@@ -99,6 +99,109 @@ INSTANTIATE_TEST_SUITE_P(
     return info.param.testName;
     });
 
+namespace {
+    struct DatabaseConfigurationFromUrlTestCase {
+        std::string testName;
+        std::string url;
+        bool expectSuccess;
+        std::string expectedHost;
+        std::uint16_t expectedPort{};
+        std::string expectedDatabaseName;
+        std::string expectedUser;
+        bool expectedUseSsl{};
+        DatabaseConfigurationError expectedError{};
+    };
+}
+
+class DatabaseConfigurationFromUrlTest
+        : public ::testing::TestWithParam<DatabaseConfigurationFromUrlTestCase> {
+};
+
+TEST_P(DatabaseConfigurationFromUrlTest, FromUrl) {
+    const auto& testCase = GetParam();
+
+    const auto result = DatabaseConfiguration::fromUrl(testCase.url);
+
+    if (testCase.expectSuccess) {
+        ASSERT_TRUE(result.has_value());
+        EXPECT_EQ(result->host(), testCase.expectedHost);
+        EXPECT_EQ(result->port(), testCase.expectedPort);
+        EXPECT_EQ(result->databaseName(), testCase.expectedDatabaseName);
+        EXPECT_EQ(result->user(), testCase.expectedUser);
+        EXPECT_EQ(result->useSsl(), testCase.expectedUseSsl);
+        return;
+    }
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error(), testCase.expectedError);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    DatabaseConfigurationFromUrlTests,
+    DatabaseConfigurationFromUrlTest,
+    ::testing::Values(
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "ValidUrlWithSslDisabled",
+            .url = "postgres://orders:secret@localhost:5432/orders?sslmode=disable",
+            .expectSuccess = true,
+            .expectedHost = "localhost", .expectedPort = 5432,
+            .expectedDatabaseName = "orders", .expectedUser = "orders",
+            .expectedUseSsl = false
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "ValidUrlWithSslRequire",
+            .url = "postgres://reader:pw@db.internal:5433/analytics?sslmode=require",
+            .expectSuccess = true,
+            .expectedHost = "db.internal", .expectedPort = 5433,
+            .expectedDatabaseName = "analytics", .expectedUser = "reader",
+            .expectedUseSsl = true
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "ValidUrlWithoutSslmodeParam",
+            .url = "postgres://orders:secret@localhost:5432/orders",
+            .expectSuccess = true,
+            .expectedHost = "localhost", .expectedPort = 5432,
+            .expectedDatabaseName = "orders", .expectedUser = "orders",
+            .expectedUseSsl = false
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "ValidUrlWithPostgresqlScheme",
+            .url = "postgresql://orders:secret@localhost:5432/orders?sslmode=disable",
+            .expectSuccess = true,
+            .expectedHost = "localhost", .expectedPort = 5432,
+            .expectedDatabaseName = "orders", .expectedUser = "orders",
+            .expectedUseSsl = false
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "InvalidScheme",
+            .url = "mysql://orders:secret@localhost:5432/orders",
+            .expectSuccess = false, .expectedError = DatabaseConfigurationError::InvalidUrl
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "MissingPort",
+            .url = "postgres://orders:secret@localhost/orders",
+            .expectSuccess = false, .expectedError = DatabaseConfigurationError::InvalidUrl
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "MissingDatabaseName",
+            .url = "postgres://orders:secret@localhost:5432/",
+            .expectSuccess = false, .expectedError = DatabaseConfigurationError::InvalidUrl
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "EmptyString",
+            .url = "",
+            .expectSuccess = false, .expectedError = DatabaseConfigurationError::InvalidUrl
+        },
+        DatabaseConfigurationFromUrlTestCase{
+            .testName = "NotAUrlAtAll",
+            .url = "just some random text",
+            .expectSuccess = false, .expectedError = DatabaseConfigurationError::InvalidUrl
+        }
+    ),
+    [](const ::testing::TestParamInfo<DatabaseConfigurationFromUrlTestCase>& info) {
+        return info.param.testName;
+    });
+
 class DatabaseConfigConnectionStringTest : public ::testing::Test {
 protected:
     static DatabaseConfiguration makeConfig(bool useSsl) {
@@ -137,4 +240,5 @@ TEST(DatabaseConfigErrorCategoryTest, MessagesAreHumanReadableForEachEnumValue) 
     EXPECT_EQ(std::error_code(DatabaseConfigurationError::EmptyDatabaseName).message(), "empty database name");
     EXPECT_EQ(std::error_code(DatabaseConfigurationError::EmptyUser).message(), "empty user");
     EXPECT_EQ(std::error_code(DatabaseConfigurationError::InvalidPort).message(), "invalid port");
+    EXPECT_EQ(std::error_code(DatabaseConfigurationError::InvalidUrl).message(), "invalid url");
 }

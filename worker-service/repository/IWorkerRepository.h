@@ -10,6 +10,8 @@
 #include <system_error>
 #include <utility>
 
+#include <models/OrderIds.h>
+
 namespace worker_service::repository {
 
 enum class RepositoryError { NotFound = 1, ConnectionFailure, Timeout, ConstraintViolation, SerializationFailure };
@@ -55,8 +57,8 @@ namespace worker_service::repository {
 
 struct ReservationRecord
 {
-    std::int64_t eventId;
-    std::string aggregateId;
+    shared::models::OutboxEventId eventId;
+    shared::models::OrderId aggregateId;
     std::string eventType;
     std::string payload;
 };

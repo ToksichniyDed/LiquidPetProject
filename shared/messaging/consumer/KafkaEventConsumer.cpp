@@ -15,10 +15,13 @@ namespace shared::messaging
     class KafkaEventConsumer::Impl
     {
     public:
-        explicit Impl(const std::string& brokers, const std::string& groupId) : _consumer(makeProperties(brokers, groupId))
+        explicit Impl(const KafkaConsumerConfiguration& configuration) : _consumer(makeProperties(configuration))
         {
+            _consumer.subscribe({configuration.topic});
+
             SPDLOG_LOGGER_INFO(shared::logger::get("KafkaEventConsumer"), "Kafka consumer created successfully!");
-            SPDLOG_LOGGER_INFO(shared::logger::get("KafkaEventConsumer"), "Kafka brokers: {}", brokers);
+            SPDLOG_LOGGER_INFO(shared::logger::get("KafkaEventConsumer"), "Kafka brokers: {}", configuration.brokers);
+            SPDLOG_LOGGER_INFO(shared::logger::get("KafkaEventConsumer"), "Subscribed to topic: {}", configuration.topic);
         }
 
         void processRecord(const ConsumerRecord& record, IEventHandler& handler)
@@ -48,11 +51,11 @@ namespace shared::messaging
         std::jthread _thread;
 
     private:
-        static Properties makeProperties(const std::string& brokers, const std::string& groupId)
+        static Properties makeProperties(const KafkaConsumerConfiguration& configuration)
         {
             Properties props;
-            props.put("bootstrap.servers", brokers);
-            props.put("group.id", groupId);
+            props.put("bootstrap.servers", configuration.brokers);
+            props.put("group.id", configuration.groupId);
             props.put("enable.auto.commit", "false");
             props.put("auto.offset.reset", "earliest");
             return props;
@@ -77,7 +80,7 @@ namespace shared::messaging
         }
     } // namespace
 
-    KafkaEventConsumer::KafkaEventConsumer(const std::string& brokers, const std::string& groupId) : _impl(std::make_unique<Impl>(brokers, groupId))
+    KafkaEventConsumer::KafkaEventConsumer(const KafkaConsumerConfiguration& configuration) : _impl(std::make_unique<Impl>(configuration))
     {
     }
 

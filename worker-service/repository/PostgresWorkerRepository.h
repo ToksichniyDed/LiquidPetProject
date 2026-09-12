@@ -14,7 +14,7 @@ namespace worker_service::repository {
 class PostgresWorkerRepository : public IWorkerRepository {
     public:
     explicit PostgresWorkerRepository(const shared::models::DatabaseConfiguration& configuration);
-     ~PostgresWorkerRepository() override = default;
+    ~PostgresWorkerRepository() override;
     std::expected<bool, std::error_code> recordReservationIfNew(const ReservationRecord& record) override;
 
 private:

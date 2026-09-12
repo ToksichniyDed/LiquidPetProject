@@ -8,11 +8,12 @@
 #include <memory>
 
 #include "IEventConsumer.h"
+#include <KafkaConsumerConfiguration.h>
 
 namespace shared::messaging {
     class KafkaEventConsumer : public IEventConsumer {
        public:
-        explicit KafkaEventConsumer(const std::string& brokers, const std::string& groupId);
+        explicit KafkaEventConsumer(const KafkaConsumerConfiguration& configuration);
         ~KafkaEventConsumer();
 
         KafkaEventConsumer(const KafkaEventConsumer&) = delete;
