@@ -57,10 +57,17 @@ namespace shared::outbox {
         pending.reserve(entries.value().size());
 
         for (const auto& entry : entries.value()) {
-            pending.push_back(PendingPublish{
-                .entry = entry,
-                .result = _publisher->publish(_topic, entry.aggregateId, entry.payload)
-            });
+            pending.push_back(PendingPublish{.entry = entry,
+                                             .result = _publisher->publish(messaging::PublishRequest{
+                                                 .topic = _topic,
+                                                 .key = entry.aggregateId,
+                                                 .payload = entry.payload,
+                                                 .metadata =
+                                                     messaging::MessageMetadata{
+                                                         .eventId = entry.id,
+                                                         .eventType = entry.eventType,
+                                                     },
+                                             })});
         }
 
         for (auto& [entry, result] : pending) {
@@ -68,7 +75,7 @@ namespace shared::outbox {
             if (const auto waitStatus = result.wait_for(_publishTimeout); waitStatus != std::future_status::ready) {
                 SPDLOG_LOGGER_WARN(shared::logger::get("OutboxPublisher"),
                                    "Publish for outbox entry {} did not complete within {} ms, will retry next cycle",
-                                   entry.id, _publishTimeout.count());
+                                   entry.id.value(), _publishTimeout.count());
                 continue;
             }
 
@@ -76,13 +83,13 @@ namespace shared::outbox {
             if (const auto publishResult = result.get(); !publishResult.has_value()) {
                 SPDLOG_LOGGER_WARN(shared::logger::get("OutboxPublisher"),
                                    "Failed to publish outbox entry {}: {}, will retry next cycle",
-                                   entry.id, publishResult.error().message());
+                                   entry.id.value(), publishResult.error().message());
                 continue;
             }
 
             _repository->markAsPublished(entry.id).or_else([&entry](const std::error_code& ec) {
                 SPDLOG_LOGGER_WARN(shared::logger::get("OutboxPublisher"),
-                                   "Failed to mark entry {} as published: {}", entry.id, ec.message());
+                                   "Failed to mark entry {} as published: {}", entry.id.value(), ec.message());
                 return std::expected<void, std::error_code>{std::unexpected(ec)};
             });
         }

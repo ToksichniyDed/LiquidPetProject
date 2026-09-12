@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include <OrderIds.h>
+
 namespace shared::outbox {
     enum class OutboxRepositoryError : std::int8_t {
         NotFound = 1,
@@ -61,7 +63,7 @@ namespace std {
 namespace shared::outbox {
 
     struct OutboxEntry {
-        std::string id;
+        models::OutboxEventId id;
         std::string aggregateId;
         std::string eventType;
         std::string payload;
@@ -75,7 +77,7 @@ namespace shared::outbox {
         [[nodiscard]] virtual std::expected<std::vector<OutboxEntry>, std::error_code> fetchUnpublished(
             int limit) = 0;
         [[nodiscard]] virtual std::expected<void, std::error_code> markAsPublished(
-            const std::string& entryId) = 0;
+            const models::OutboxEventId& entryId) = 0;
     };
 }
 

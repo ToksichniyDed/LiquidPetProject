@@ -18,7 +18,7 @@ public:
                              processing::IOrderProcessor& orderProcessor);
     ~OrderReservationHandler() override = default;
 
-    bool handle(const std::string& payload) override;
+    bool handle(const std::string& payload, const shared::messaging::MessageMetadata& metadata) override;
 
 private:
     repository::IWorkerRepository& _workerRepository;

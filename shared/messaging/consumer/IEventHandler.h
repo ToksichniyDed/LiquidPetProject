@@ -5,6 +5,8 @@
 #ifndef LIQUIDPETPROJECT_IEVENTHANDLER_H
 #define LIQUIDPETPROJECT_IEVENTHANDLER_H
 
+#include <messaging/MessageMetadata.h>
+
 namespace shared::messaging {
 
     class IEventHandler
@@ -15,7 +17,7 @@ namespace shared::messaging {
         // Возвращает true, если сообщение обработано успешно (оффсет можно коммитить),
         // false — обработка не удалась, оффсет НЕ коммитится, сообщение будет
         // повторно доставлено при следующем poll/рестарте.
-        [[nodiscard]] virtual bool handle(const std::string& payload) = 0;
+        [[nodiscard]] virtual bool handle(const std::string& payload, const MessageMetadata& metadata) = 0;
     };
 
 }  // namespace shared::messaging

@@ -23,7 +23,6 @@ struct OrderCreatedItem
 
 struct OrderCreatedEvent
 {
-    shared::models::OutboxEventId  eventId;
     shared::models::OrderId orderId;
     shared::models::UserId userId;
     std::vector<OrderCreatedItem> items;

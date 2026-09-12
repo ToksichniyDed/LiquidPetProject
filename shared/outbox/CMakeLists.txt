@@ -11,6 +11,7 @@ target_sources(shared_outbox PUBLIC
 
 target_link_libraries(shared_outbox
     PUBLIC
+    shared_models
     shared_messaging
     PRIVATE
     shared_logging

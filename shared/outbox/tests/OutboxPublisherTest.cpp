@@ -21,6 +21,8 @@ namespace order_service::outbox {
     using shared::outbox::OutboxEntry;
     using shared::messaging::MockEventPublisher;
     using shared::messaging::makeReadyFuture;
+    using shared::messaging::PublishRequest;
+    using shared::messaging::MessageMetadata;
 
     class OutboxPublisherTest : public ::testing::Test {
     protected:
@@ -30,6 +32,7 @@ namespace order_service::outbox {
         }
 
         static constexpr auto kFastPollInterval = std::chrono::milliseconds(10);
+        static constexpr auto kTopic = "orders.events";
 
         std::shared_ptr<MockOutboxRepository> _repository;
         std::shared_ptr<MockEventPublisher> _publisher;
@@ -37,7 +40,7 @@ namespace order_service::outbox {
 
     TEST_F(OutboxPublisherTest, PublishesUnpublishedEntryAndMarksItPublished) {
         const OutboxEntry entry{
-            .id = "outbox-1",
+            .id = shared::models::OutboxEventId::create("11111111-1111-1111-1111-111111111111").value(),
             .aggregateId = "order-1",
             .eventType = "OrderCreated",
             .payload = R"({"orderId":"order-1"})"
@@ -50,19 +53,23 @@ namespace order_service::outbox {
             .WillOnce(Return(std::vector<OutboxEntry>{entry}))
             .WillRepeatedly(Return(std::vector<OutboxEntry>{}));
 
-        EXPECT_CALL(*_publisher, publish("orders.events", entry.aggregateId, entry.payload))
-            .WillOnce([](const std::string&, const std::string&, const std::string&) {
-                                                                                                return makeReadyFuture(
-                                                                                                    {});
-                                                                                            });
+        const PublishRequest expectedRequest{
+            .topic = kTopic,
+            .key = entry.aggregateId,
+            .payload = entry.payload,
+            .metadata = MessageMetadata{.eventId = entry.id, .eventType = entry.eventType},
+        };
+
+        EXPECT_CALL(*_publisher, publish(::testing::Eq(expectedRequest)))
+            .WillOnce([](const PublishRequest&) { return makeReadyFuture({}); });
 
         EXPECT_CALL(*_repository, markAsPublished(entry.id))
-            .WillOnce([&markedAsPublished](const std::string&) {
+            .WillOnce([&markedAsPublished](const shared::models::OutboxEventId&) {
                 markedAsPublished.set_value();
                 return std::expected<void, std::error_code>{};
-        });
+            });
 
-        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, kTopic, kFastPollInterval);
         publisher.start();
 
         const auto status = markedAsPublishedFuture.wait_for(std::chrono::seconds(2));
@@ -73,7 +80,7 @@ namespace order_service::outbox {
 
     TEST_F(OutboxPublisherTest, DoesNotMarkAsPublishedWhenPublishFails) {
         const OutboxEntry entry{
-            .id = "outbox-2",
+            .id = shared::models::OutboxEventId::create("22222222-2222-2222-2222-222222222222").value(),
             .aggregateId = "order-2",
             .eventType = "OrderCreated",
             .payload = R"({"orderId":"order-2"})"
@@ -86,20 +93,17 @@ namespace order_service::outbox {
             .WillOnce(Return(std::vector<OutboxEntry>{entry}))
             .WillRepeatedly(Return(std::vector<OutboxEntry>{}));
 
-        EXPECT_CALL(*_publisher, publish(_, _, _))
-            .WillOnce([&publishAttempted](const std::string&, const std::string&, const std::string&) {
-                                                      publishAttempted.set_value();
-                                                      return makeReadyFuture(
-                                                          std::expected<void, std::error_code>{
-                                                              std::unexpected(
-                                                              shared::messaging::EventPublisherError::BrokerRejected)
-                                                          });
-        });
+        EXPECT_CALL(*_publisher, publish(_))
+            .WillOnce([&publishAttempted](const PublishRequest&) {
+                publishAttempted.set_value();
+                return makeReadyFuture(std::expected<void, std::error_code>{
+                    std::unexpected(shared::messaging::EventPublisherError::BrokerRejected)});
+            });
 
         // раз публикация не удалась, markAsPublished не должен вызываться вообще
         EXPECT_CALL(*_repository, markAsPublished(_)).Times(0);
 
-        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, kTopic, kFastPollInterval);
         publisher.start();
 
         const auto status = publishAttemptedFuture.wait_for(std::chrono::seconds(2));
@@ -113,22 +117,18 @@ namespace order_service::outbox {
         auto fetchedFuture = fetchedAtLeastTwice.get_future();
         std::atomic<int> callCount{0};
 
-        // repository падает с ошибкой, но цикл не должен падать/останавливаться
-        // должен просто попробовать снова в следующем polling-цикле
         EXPECT_CALL(*_repository, fetchUnpublished(_))
             .WillRepeatedly([&callCount, &fetchedAtLeastTwice](int) {
-                                                          if (++callCount == 2) {
-                                                              fetchedAtLeastTwice.set_value();
-                                                          }
-                                                          return std::expected<
-                                                              std::vector<OutboxEntry>, std::error_code>{
-                                                              std::unexpected(shared::outbox::OutboxRepositoryError::ConnectionFailure)
-                                                          };
-                                                      });
+                if (++callCount == 2) {
+                    fetchedAtLeastTwice.set_value();
+                }
+                return std::expected<std::vector<OutboxEntry>, std::error_code>{
+                    std::unexpected(shared::outbox::OutboxRepositoryError::ConnectionFailure)};
+            });
 
-        EXPECT_CALL(*_publisher, publish(_, _, _)).Times(0);
+        EXPECT_CALL(*_publisher, publish(_)).Times(0);
 
-        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, kTopic, kFastPollInterval);
         publisher.start();
 
         const auto status = fetchedFuture.wait_for(std::chrono::seconds(2));
@@ -138,12 +138,18 @@ namespace order_service::outbox {
     }
 
     TEST_F(OutboxPublisherTest, PublishesAllEntriesInBatchConcurrentlyBeforeAwaitingResults) {
-        // publish() должен быть вызван для каждой записи
-        // батча до того, как паблишер начнёт дожидаться результатов
-        // имитируем это тем, что все promise выставляются позже, вручную,
-        // а не сразу внутри лямбды publish()
-        const OutboxEntry entryA{.id = "a", .aggregateId = "order-a", .eventType = "OrderCreated", .payload = "{}"};
-        const OutboxEntry entryB{.id = "b", .aggregateId = "order-b", .eventType = "OrderCreated", .payload = "{}"};
+        const OutboxEntry entryA{
+            .id = shared::models::OutboxEventId::create("33333333-3333-3333-3333-333333333333").value(),
+            .aggregateId = "order-a",
+            .eventType = "OrderCreated",
+            .payload = "{}"
+        };
+        const OutboxEntry entryB{
+            .id = shared::models::OutboxEventId::create("44444444-4444-4444-4444-444444444444").value(),
+            .aggregateId = "order-b",
+            .eventType = "OrderCreated",
+            .payload = "{}"
+        };
 
         std::promise<std::expected<void, std::error_code>> promiseA;
         std::promise<std::expected<void, std::error_code>> promiseB;
@@ -156,26 +162,22 @@ namespace order_service::outbox {
             .WillOnce(Return(std::vector<OutboxEntry>{entryA, entryB}))
             .WillRepeatedly(Return(std::vector<OutboxEntry>{}));
 
-        EXPECT_CALL(*_publisher, publish(_, "order-a", _))
-            .WillOnce([&publishCallCount, &bothPublishCalled, &promiseA](
-                                                          const std::string&, const std::string&, const std::string&) {
-                                                                  if (++publishCallCount == 2)
-                                                                      bothPublishCalled.set_value();
-                                                                  return promiseA.get_future();
-                                                              });
+        EXPECT_CALL(*_publisher, publish(::testing::Field(&PublishRequest::key, "order-a")))
+            .WillOnce([&publishCallCount, &bothPublishCalled, &promiseA](const PublishRequest&) {
+                if (++publishCallCount == 2) bothPublishCalled.set_value();
+                return promiseA.get_future();
+            });
 
-        EXPECT_CALL(*_publisher, publish(_, "order-b", _))
-            .WillOnce([&publishCallCount, &bothPublishCalled, &promiseB](
-                                                          const std::string&, const std::string&, const std::string&) {
-                                                                  if (++publishCallCount == 2)
-                                                                      bothPublishCalled.set_value();
-                                                                  return promiseB.get_future();
-                                                              });
+        EXPECT_CALL(*_publisher, publish(::testing::Field(&PublishRequest::key, "order-b")))
+            .WillOnce([&publishCallCount, &bothPublishCalled, &promiseB](const PublishRequest&) {
+                if (++publishCallCount == 2) bothPublishCalled.set_value();
+                return promiseB.get_future();
+            });
 
         EXPECT_CALL(*_repository, markAsPublished(_))
             .WillRepeatedly(Return(std::expected<void, std::error_code>{}));
 
-        shared::outbox::OutboxPublisher publisher(_repository, _publisher, "orders.events", kFastPollInterval);
+        shared::outbox::OutboxPublisher publisher(_repository, _publisher, kTopic, kFastPollInterval);
         publisher.start();
 
         const auto status = bothPublishCalledFuture.wait_for(std::chrono::seconds(2));
