@@ -96,6 +96,8 @@ class OrderCreatedEventJsonMapper {
         if (!quantity.has_value())
             return std::unexpected(quantity.error());
 
+        if (quantity.value() <= 0) return std::unexpected(std::make_error_code(std::errc::invalid_argument));
+
         return OrderCreatedItem{
             .productId = std::move(productId.value()),
             .quantity = quantity.value(),
@@ -103,6 +105,6 @@ class OrderCreatedEventJsonMapper {
     }
 };
 
-}  // namespace worker_service::events
+}
 
 #endif  // LIQUIDPETPROJECT_ORDERCREATEDEVENTJSONMAPPER_H

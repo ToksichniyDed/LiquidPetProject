@@ -9,6 +9,7 @@
 #include <regex>
 #include <string>
 #include <system_error>
+#include <cstdint>
 
 namespace shared::models {
 
