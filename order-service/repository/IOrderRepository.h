@@ -6,7 +6,7 @@
 #define LIQUIDPETPROJECT_IORDERREPOSITORY_H
 
 #include <Order.h>
-#include <RepositoryError.h>
+#include <repository/RepositoryError.h>
 
 #include <expected>
 #include <system_error>
