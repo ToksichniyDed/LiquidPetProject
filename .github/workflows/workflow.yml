@@ -55,5 +55,78 @@ jobs:
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }} -j $(nproc)
 
-      - name: Run tests
-        run: ctest --preset ${{ matrix.preset }} --output-on-failure
+      - name: Run unit tests
+        run: ctest --preset ${{ matrix.preset }} --output-on-failure -LE integration
+
+  integration-test:
+    runs-on: ubuntu-26.04
+    needs: build-and-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Conan
+        run: pipx install conan
+
+      - name: Make scripts executable
+        run: chmod +x conan/scripts/*.sh
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2/p
+          key: conan-${{ runner.os }}-debug-gcc-${{ hashFiles('conanfile.txt', 'conan/profiles/*.profile') }}
+          restore-keys: |
+            conan-${{ runner.os }}-debug-gcc-
+
+      - name: Install Conan dependencies
+        run: ./conan/scripts/install_conan_debug.sh
+
+      - name: Configure CMake
+        run: cmake --preset debug-gcc
+
+      - name: Build
+        run: cmake --build --preset debug-gcc -j $(nproc)
+
+      - name: Start infrastructure
+        run: docker compose up -d --wait postgres worker-postgres kafka
+
+      - name: Install dbmate
+        run: |
+          curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+          chmod +x /usr/local/bin/dbmate
+
+      - name: Run order-service migrations
+        env:
+          DATABASE_URL: postgres://orders:orders@localhost:5432/orders?sslmode=disable
+        run: dbmate --migrations-dir order-service/db/migrations up
+
+      - name: Run worker-service migrations
+        env:
+          DATABASE_URL: postgres://worker:worker@localhost:5433/worker?sslmode=disable
+        run: dbmate --migrations-dir worker-service/db/migrations up
+
+      - name: Run integration tests
+        env:
+          ORDER_SERVICE_DATABASE_URL: postgres://orders:orders@localhost:5432/orders?sslmode=disable
+          WORKER_SERVICE_DATABASE_URL: postgres://worker:worker@localhost:5433/worker?sslmode=disable
+          KAFKA_BROKERS: localhost:9092
+        run: ctest --preset debug-gcc --output-on-failure -L integration
+
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs postgres worker-postgres kafka
+
+      - name: Stop infrastructure
+        if: always()
+        run: docker compose down -v

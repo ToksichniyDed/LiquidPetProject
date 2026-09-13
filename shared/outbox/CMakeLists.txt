@@ -52,4 +52,19 @@ if (BUILD_TESTING)
 
     include(GoogleTest)
     gtest_discover_tests(shared_outbox_tests)
+
+    # интеграционные тесты
+    add_executable(shared_outbox_integration_tests
+        tests/PostgresOutboxRepositoryIntegrationTest.cpp
+    )
+    target_link_libraries(shared_outbox_integration_tests PRIVATE
+        shared_outbox
+        shared_repository
+        libpqxx::pqxx
+        GTest::gtest_main
+    )
+
+    gtest_discover_tests(shared_outbox_integration_tests
+        PROPERTIES LABELS integration
+    )
 endif ()

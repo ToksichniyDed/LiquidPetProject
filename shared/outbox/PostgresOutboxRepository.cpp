@@ -91,7 +91,11 @@ std::expected<void, std::error_code> PostgresOutboxRepository::markAsPublished(c
     try {
         pqxx::work work(_impl->_connection);
 
-        work.exec(pqxx::prepped{MARK_OUTBOX_PUBLISHED}, pqxx::params{entryId.value()});
+        if (auto result = work.exec(pqxx::prepped{MARK_OUTBOX_PUBLISHED}, pqxx::params{entryId.value()});
+            result.affected_rows() == 0) {
+            work.abort();
+            return std::unexpected(make_error_code(OutboxRepositoryError::NotFound));
+        }
 
         work.commit();
 

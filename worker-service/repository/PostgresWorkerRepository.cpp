@@ -57,7 +57,6 @@ std::expected<bool, std::error_code> PostgresWorkerRepository::recordReservation
     } catch (const std::exception& e) {
         return std::unexpected(shared::repository::postgres::mapPqxxException(e));
     }
-    return true;
 }
 
 }  // namespace worker_service::repository
