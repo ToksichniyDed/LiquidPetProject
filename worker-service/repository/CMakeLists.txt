@@ -12,7 +12,11 @@ target_sources(worker_repository PUBLIC
     PostgresWorkerRepository.h
     WorkerRepositoryQueries.h)
 
-target_link_libraries(worker_repository PRIVATE
+target_link_libraries(worker_repository
+    PUBLIC
+    shared_repository
+
+    PRIVATE
     worker_events2json_mapper
     worker_events
 

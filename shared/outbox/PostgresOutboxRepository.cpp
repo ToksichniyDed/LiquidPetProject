@@ -5,6 +5,7 @@
 #include "PostgresOutboxRepository.h"
 
 #include <logging/Logger.h>
+#include <repository/postgres/PqxxExceptionMapper.h>
 
 #include <pqxx/pqxx>
 
@@ -13,6 +14,7 @@
 
 namespace shared::outbox {
 using namespace queries;
+using namespace shared::repository::postgres;
 
 namespace {
 inline constexpr auto ID = "id";
@@ -39,17 +41,6 @@ class PostgresOutboxRepository::Impl {
 };
 
 namespace {
-
-std::error_code mapException(const std::exception& e) {
-    using enum OutboxRepositoryError;
-    if (dynamic_cast<const pqxx::broken_connection*>(&e)) return make_error_code(ConnectionFailure);
-    if (dynamic_cast<const pqxx::unique_violation*>(&e) || dynamic_cast<const pqxx::foreign_key_violation*>(&e) ||
-        dynamic_cast<const pqxx::check_violation*>(&e))
-        return make_error_code(ConstraintViolation);
-    if (dynamic_cast<const pqxx::in_doubt_error*>(&e)) return make_error_code(Timeout);
-
-    return make_error_code(SerializationFailure);
-}
 
 std::expected<OutboxEntry, std::error_code> mapRow(const pqxx::row_ref& row) {
     auto idResult = models::OutboxEventId::create(row[ID].as<std::string>());
@@ -92,7 +83,7 @@ std::expected<std::vector<OutboxEntry>, std::error_code> PostgresOutboxRepositor
 
         return entries;
     } catch (const std::exception& e) {
-        return std::unexpected(mapException(e));
+        return std::unexpected(mapPqxxException(e));
     }
 }
 
@@ -106,7 +97,7 @@ std::expected<void, std::error_code> PostgresOutboxRepository::markAsPublished(c
 
         return {};
     } catch (const std::exception& e) {
-        return std::unexpected(mapException(e));
+        return std::unexpected(mapPqxxException(e));
     }
 }
 }  // namespace shared::outbox

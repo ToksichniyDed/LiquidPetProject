@@ -13,8 +13,11 @@ target_link_libraries(shared_outbox
     PUBLIC
     shared_models
     shared_messaging
+    shared_repository
+    shared_include_paths
     PRIVATE
     shared_logging
+    shared_repository_postgres
     libpqxx::pqxx
 )
 
