@@ -49,4 +49,18 @@ if(BUILD_TESTING)
 
     include(GoogleTest)
     gtest_discover_tests(order_repository_tests)
+
+    # интеграционные тесты
+    add_executable(order_repository_integration_tests
+        tests/PostgresOrderRepositoryIntegrationTest.cpp
+    )
+    target_link_libraries(order_repository_integration_tests PRIVATE
+        order_repository
+        libpqxx::pqxx
+        GTest::gtest_main
+    )
+
+    gtest_discover_tests(order_repository_integration_tests
+        PROPERTIES LABELS integration
+    )
 endif()

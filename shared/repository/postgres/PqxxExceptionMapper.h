@@ -5,10 +5,10 @@
 #ifndef LIQUIDPETPROJECT_PQXXEXCEPTIONMAPPER_H
 #define LIQUIDPETPROJECT_PQXXEXCEPTIONMAPPER_H
 
+#include <repository/RepositoryError.h>
+
 #include <pqxx/pqxx>
 #include <system_error>
-
-#include "RepositoryError.h"
 
 namespace shared::repository::postgres {
 
