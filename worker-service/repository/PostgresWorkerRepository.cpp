@@ -5,6 +5,7 @@
 #include "PostgresWorkerRepository.h"
 
 #include <logging/Logger.h>
+#include <repository/postgres/PqxxExceptionMapper.h>
 
 #include <pqxx/pqxx>
 
@@ -31,21 +32,6 @@ class PostgresWorkerRepository::Impl {
     pqxx::connection _connection;
 };
 
-namespace {
-
-std::error_code mapException(const std::exception& e) {
-    using enum RepositoryError;
-    if (dynamic_cast<const pqxx::broken_connection*>(&e)) return ConnectionFailure;
-    if (dynamic_cast<const pqxx::unique_violation*>(&e) || dynamic_cast<const pqxx::foreign_key_violation*>(&e) ||
-        dynamic_cast<const pqxx::check_violation*>(&e))
-        return ConstraintViolation;
-    if (dynamic_cast<const pqxx::in_doubt_error*>(&e)) return Timeout;
-
-    return SerializationFailure;
-}
-
-}  // namespace
-
 PostgresWorkerRepository::PostgresWorkerRepository(const shared::models::DatabaseConfiguration& configuration)
     : _impl(std::make_unique<Impl>(configuration)) {}
 
@@ -69,7 +55,7 @@ std::expected<bool, std::error_code> PostgresWorkerRepository::recordReservation
 
         return true;
     } catch (const std::exception& e) {
-        return std::unexpected(mapException(e));
+        return std::unexpected(shared::repository::postgres::mapPqxxException(e));
     }
     return true;
 }

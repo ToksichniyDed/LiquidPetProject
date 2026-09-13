@@ -13,6 +13,7 @@ target_compile_features(order_repository PUBLIC cxx_std_23)
 target_link_libraries(order_repository
     PUBLIC
     order_models
+    shared_repository
     PRIVATE
     order_models2row_mapper
     order_models2json_mapper
