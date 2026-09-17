@@ -2,28 +2,25 @@
 // Created by DED on 15.08.2026.
 //
 
-#include <filesystem>
-#include <expected>
-
-#include <IOrderRepository.h>
-#include <PostgresOrderRepository.h>
-#include <RoutePaths.h>
 #include <CQRS/CreateOrderHandler.h>
 #include <CQRS/GetOrderHandler.h>
 #include <CQRS/HealthHandler.h>
-
-#include <logging/Logger.h>
-#include <http/Route.h>
+#include <IOrderRepository.h>
+#include <PostgresOrderRepository.h>
+#include <RoutePaths.h>
 #include <http/HttpServer.h>
-#include <models/NetworkConfiguration.h>
-#include <models/DatabaseConfiguration.h>
-#include <models2json-mapper/mapper/NetworkConfigurationJsonMapper.h>
-#include <models2json-mapper/mapper/DatabaseConfigurationJsonMapper.h>
+#include <http/Route.h>
+#include <logging/Logger.h>
 #include <messaging/producer/KafkaEventPublisher.h>
+#include <models/NetworkConfiguration.h>
+#include <models/EnvironmentConfiguration.h>
+#include <models2json-mapper/mapper/NetworkConfigurationJsonMapper.h>
 #include <outbox/OutboxPublisher.h>
 #include <outbox/PostgresOutboxRepository.h>
 
 #include <CLI/CLI.hpp>
+#include <expected>
+#include <filesystem>
 
 namespace {
 
@@ -41,6 +38,13 @@ namespace {
                ->check(CLI::ExistingFile);
             app.add_option("--address", options.addressOverride, "Override network address from config");
             app.add_option("--port", options.portOverride, "Override network port from config");
+        }
+
+    shared::models::EnvironmentSchema orderServiceEnvironmentSchema() {
+            return {
+                {.name = "ORDER_SERVICE_DATABASE_URL", .required = true},
+                {.name = "ORDER_SERVICE_KAFKA_BROKERS", .required = true},
+            };
         }
 
     }
@@ -76,18 +80,6 @@ namespace {
         }
 
         return networkConfiguration.value();
-    }
-
-    std::expected<shared::models::DatabaseConfiguration, std::error_code> loadDatabaseConfiguration(
-        const std::filesystem::path& configPath, const std::string& password) {
-
-        auto databaseSection = shared::json::JsonHelper::loadSection(configPath, "database");
-        if (!databaseSection.has_value()) {
-            return std::unexpected(databaseSection.error());
-        }
-
-        return shared::models2json_mapper::DatabaseConfigurationJsonMapper::fromJson(
-            databaseSection.value(), password);
     }
 
     std::vector<shared::http::handlers::Route> buildRoutes(
@@ -133,23 +125,17 @@ int main(const int argc, char* argv[]) {
 
     shared::logger::init(true, false, spdlog::level::level_enum::debug, {}, 1024, 0);
 
-    const char* dbPassword = std::getenv("DB_PASSWORD");
-    if (!dbPassword) {
-        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "DB_PASSWORD environment variable is not set");
-        return 1;
-    }
+auto environment = unwrapOrExit(
+    shared::models::EnvironmentConfiguration::load(orderServiceEnvironmentSchema()));
 
-    const char* kafkaBrokers = std::getenv("KAFKA_BROKERS");
-    if (!kafkaBrokers) {
-        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "KAFKA_BROKERS environment variable is not set");
-        return 1;
-    }
+const auto& databaseUrl = environment.require("ORDER_SERVICE_DATABASE_URL");
+const auto& kafkaBrokers = environment.require("ORDER_SERVICE_KAFKA_BROKERS");
 
-    auto networkConfiguration = unwrapOrExit(
-        loadNetworkConfiguration(options.configPath, options.addressOverride, options.portOverride));
+auto networkConfiguration = unwrapOrExit(
+    loadNetworkConfiguration(options.configPath, options.addressOverride, options.portOverride));
 
-    auto databaseConfiguration = unwrapOrExit(
-        loadDatabaseConfiguration(options.configPath, dbPassword));
+auto databaseConfiguration = unwrapOrExit(
+    shared::models::DatabaseConfiguration::fromUrl(databaseUrl));
 
     std::shared_ptr<order_system::repository::IOrderRepository> repository;
     std::shared_ptr<shared::outbox::IOutboxRepository> outboxRepository;

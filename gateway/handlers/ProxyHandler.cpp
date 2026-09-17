@@ -12,7 +12,7 @@ namespace gateway_service::handlers {
     using namespace shared::models;
 
     ProxyHandler::ProxyHandler(
-        std::unordered_map<std::string, NetworkConfiguration> services) : _ioContext(1),
+        std::unordered_map<std::string, UpstreamConfiguration> services) : _ioContext(1),
         _servicesUrl(std::move(services)) {
     }
 
@@ -30,7 +30,7 @@ namespace gateway_service::handlers {
                 tcp::resolver resolver(_ioContext);
                 tcp::socket socket(_ioContext);
 
-                const auto& host = config.address.value();
+                const auto& host = config.host.value();
                 const auto port = std::to_string(config.port);
 
                 beast::error_code ec;

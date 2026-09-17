@@ -4,9 +4,11 @@ add_library(shared_models2json_mapper INTERFACE
 target_sources(shared_models2json_mapper INTERFACE
     keys/DatabaseConfigurationJsonKeys.h
     keys/NetworkConfigurationJsonKeys.h
+    keys/UpstreamConfigurationJsonKeys.h
 
     mapper/DatabaseConfigurationJsonMapper.h
     mapper/NetworkConfigurationJsonMapper.h
+    mapper/UpstreamConfigurationJsonMapper.h
 )
 
 target_include_directories(shared_models2json_mapper INTERFACE
@@ -24,6 +26,7 @@ if (BUILD_TESTING)
     add_executable(shared_models2json_mapper_tests
         tests/DatabaseConfigurationJsonMapperTest.cpp
         tests/NetworkConfigurationJsonMapperTest.cpp
+        tests/UpstreamConfigurationJsonMapperTest.h
     )
 
     target_link_libraries(shared_models2json_mapper_tests PUBLIC

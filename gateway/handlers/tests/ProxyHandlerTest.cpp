@@ -6,6 +6,7 @@
 #include <http/HttpServer.h>
 #include <http/Route.h>
 #include <logging/Logger.h>
+#include <models/Host.h>
 #include <models/NetworkAddress.h>
 
 #include <chrono>
@@ -31,8 +32,15 @@ class UpstreamEchoHandler : public IRequestHandler {
     }
 };
 
-NetworkConfiguration makeLocalConfig(std::uint16_t port) {
+// Бинд upstream-заглушки всё ещё делается через NetworkAddress (её обязан
+// понимать HttpServer), а вот адрес, по которому к ней подключается
+// ProxyHandler, теперь Host - ровно то, что используется в проде.
+NetworkConfiguration makeLocalBindConfig(std::uint16_t port) {
     return NetworkConfiguration{.address = NetworkAddress::create("127.0.0.1").value(), .port = port};
+}
+
+UpstreamConfiguration makeLocalUpstreamConfig(std::uint16_t port) {
+    return UpstreamConfiguration{.host = Host::create("127.0.0.1").value(), .port = port};
 }
 
 }  // namespace
@@ -49,7 +57,7 @@ class ProxyHandlerTest : public ::testing::Test {
             {.method = Method::Post, .pathPrefix = "/orders", .handler = std::make_shared<UpstreamEchoHandler>()},
         };
 
-        upstreamServer = std::make_unique<HttpServer>(makeLocalConfig(port), std::move(routes));
+        upstreamServer = std::make_unique<HttpServer>(makeLocalBindConfig(port), std::move(routes));
         upstreamThread = std::thread([this] { upstreamServer->run(); });
 
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
@@ -72,7 +80,7 @@ class ProxyHandlerTest : public ::testing::Test {
 TEST_F(ProxyHandlerTest, UnknownMethodReturnsMethodNotAllowedWithoutContactingUpstream) {
     // Порт не поднят вообще - если бы прокси всё равно пытался достучаться,
     // тест бы упал по BadGateway, а не по MethodNotAllowed.
-    std::unordered_map<std::string, NetworkConfiguration> services{{"/orders", makeLocalConfig(19999)}};
+    std::unordered_map<std::string, UpstreamConfiguration> services{{"/orders", makeLocalUpstreamConfig(19999)}};
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Unknown, .path = "/orders", .body = ""};
@@ -82,7 +90,7 @@ TEST_F(ProxyHandlerTest, UnknownMethodReturnsMethodNotAllowedWithoutContactingUp
 }
 
 TEST_F(ProxyHandlerTest, UnmatchedPathReturnsNotFound) {
-    std::unordered_map<std::string, NetworkConfiguration> services{{"/orders", makeLocalConfig(19999)}};
+    std::unordered_map<std::string, UpstreamConfiguration> services{{"/orders", makeLocalUpstreamConfig(19999)}};
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/unknown-service", .body = ""};
@@ -93,7 +101,7 @@ TEST_F(ProxyHandlerTest, UnmatchedPathReturnsNotFound) {
 
 TEST_F(ProxyHandlerTest, UnreachableUpstreamReturnsBadGateway) {
     // Ничего не слушает на этом порту => connect должен упасть.
-    std::unordered_map<std::string, NetworkConfiguration> services{{"/orders", makeLocalConfig(19998)}};
+    std::unordered_map<std::string, UpstreamConfiguration> services{{"/orders", makeLocalUpstreamConfig(19998)}};
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/orders/123", .body = ""};
@@ -105,7 +113,7 @@ TEST_F(ProxyHandlerTest, UnreachableUpstreamReturnsBadGateway) {
 TEST_F(ProxyHandlerTest, ForwardsGetRequestAndReturnsUpstreamResponse) {
     startUpstreamOn(19801);
 
-    std::unordered_map<std::string, NetworkConfiguration> services{{"/orders", makeLocalConfig(upstreamPort)}};
+    std::unordered_map<std::string, UpstreamConfiguration> services{{"/orders", makeLocalUpstreamConfig(upstreamPort)}};
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/orders/123", .body = ""};
@@ -118,7 +126,7 @@ TEST_F(ProxyHandlerTest, ForwardsGetRequestAndReturnsUpstreamResponse) {
 TEST_F(ProxyHandlerTest, ForwardsPostBodyToUpstream) {
     startUpstreamOn(19802);
 
-    std::unordered_map<std::string, NetworkConfiguration> services{{"/orders", makeLocalConfig(upstreamPort)}};
+    std::unordered_map<std::string, UpstreamConfiguration> services{{"/orders", makeLocalUpstreamConfig(upstreamPort)}};
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Post, .path = "/orders", .body = R"({"userId":"abc"})"};
@@ -131,7 +139,7 @@ TEST_F(ProxyHandlerTest, ForwardsPostBodyToUpstream) {
 TEST_F(ProxyHandlerTest, PropagatesUpstreamErrorStatus) {
     startUpstreamOn(19803);
 
-    std::unordered_map<std::string, NetworkConfiguration> services{{"/orders", makeLocalConfig(upstreamPort)}};
+    std::unordered_map<std::string, UpstreamConfiguration> services{{"/orders", makeLocalUpstreamConfig(upstreamPort)}};
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/orders/fail", .body = ""};
@@ -143,9 +151,9 @@ TEST_F(ProxyHandlerTest, PropagatesUpstreamErrorStatus) {
 TEST_F(ProxyHandlerTest, RoutesToCorrectServiceAmongMultiple) {
     startUpstreamOn(19804);
 
-    std::unordered_map<std::string, NetworkConfiguration> services{
-        {"/orders", makeLocalConfig(upstreamPort)},
-        {"/search", makeLocalConfig(19997)}  // несуществующий, не должен быть задет
+    std::unordered_map<std::string, UpstreamConfiguration> services{
+        {"/orders", makeLocalUpstreamConfig(upstreamPort)},
+        {"/search", makeLocalUpstreamConfig(19997)}  // несуществующий, не должен быть задет
     };
     ProxyHandler proxy(std::move(services));
 

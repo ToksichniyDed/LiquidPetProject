@@ -39,9 +39,11 @@ namespace order_service::handlers {
             auto saveResult = _orderRepository->save(order);
 
             if (!saveResult.has_value())
-                return {.status = Status::InternalServerError, .body = orderResult.error().message()};
+                return {.status = Status::InternalServerError, .body = saveResult.error().message()};
 
-            return {.status = Status::Ok, .body = {}};
+            nlohmann::json responseJson;
+            responseJson[ORDER_ID] = saveResult.value().value();
+            return {.status = Status::Created, .body = responseJson.dump()};
         };
 
     private:
