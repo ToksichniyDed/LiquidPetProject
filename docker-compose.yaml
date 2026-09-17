@@ -1,17 +1,17 @@
 services:
-  postgres:
+  order-postgres:
     image: postgres:18
     container_name: order-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-orders}
-      POSTGRES_USER: ${POSTGRES_USER:-orders}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orders}
+      POSTGRES_DB: ${ORDER_POSTGRES_DB:-orders}
+      POSTGRES_USER: ${ORDER_POSTGRES_USER:-orders}
+      POSTGRES_PASSWORD: ${ORDER_POSTGRES_PASSWORD:-orders}
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql
+      - order_pgdata:/var/lib/postgresql
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-orders} -d ${POSTGRES_DB:-orders}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${ORDER_POSTGRES_USER:-orders} -d ${ORDER_POSTGRES_DB:-orders}" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -39,19 +39,14 @@ services:
     ports:
       - "9092:9092"
     environment:
-      # --- KRaft: одна нода совмещает роли broker + controller ---
       - KAFKA_NODE_ID=0
       - KAFKA_PROCESS_ROLES=controller,broker
       - KAFKA_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-
-      # --- listeners: 9092 для клиентов, 9093 - внутренний controller-трафик ---
-      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,DOCKER://:9094
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,DOCKER://kafka:9094
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-
-      # --- для локальной разработки с одной нодой ---
+      - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
@@ -65,7 +60,108 @@ services:
       retries: 5
       start_period: 20s
 
+  kafka-init-topics:
+    image: apache/kafka:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic orders.created --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic orders.reserved --partitions 3 --replication-factor 1
+
+  order-service-migrate:
+    image: ghcr.io/amacneil/dbmate
+    depends_on:
+      order-postgres:
+        condition: service_healthy
+    volumes:
+      - ./order-service/db/migrations:/db/migrations
+    environment:
+      DATABASE_URL: ${ORDER_SERVICE_DATABASE_URL}
+    command: [ "up" ]
+    network_mode: host
+
+  worker-service-migrate:
+    image: ghcr.io/amacneil/dbmate
+    depends_on:
+      worker-postgres:
+        condition: service_healthy
+    volumes:
+      - ./worker-service/db/migrations:/db/migrations
+    environment:
+      DATABASE_URL: ${WORKER_SERVICE_DATABASE_URL}
+    command: [ "up" ]
+    network_mode: host
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order-service/order-service.Dockerfile
+    container_name: order-service
+    depends_on:
+      order-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init-topics:
+        condition: service_completed_successfully
+      order-service-migrate:
+        condition: service_completed_successfully
+    environment:
+      ORDER_SERVICE_DATABASE_URL: postgresql://${ORDER_POSTGRES_USER:-orders}:${ORDER_POSTGRES_PASSWORD:-orders}@order-postgres:5432/${ORDER_POSTGRES_DB:-orders}?sslmode=disable
+      ORDER_SERVICE_KAFKA_BROKERS: kafka:9094
+    ports:
+      - "8080:8080"
+    command: [ "--config", "/app/order-service.json", "--address", "0.0.0.0" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  worker-service:
+    build:
+      context: .
+      dockerfile: worker-service/worker-service.Dockerfile
+    container_name: worker-service
+    depends_on:
+      worker-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init-topics:
+        condition: service_completed_successfully
+      worker-service-migrate:
+        condition: service_completed_successfully
+    environment:
+      WORKER_SERVICE_DATABASE_URL: postgresql://${WORKER_POSTGRES_USER:-worker}:${WORKER_POSTGRES_PASSWORD:-worker}@worker-postgres:5432/${WORKER_POSTGRES_DB:-worker}?sslmode=disable
+      WORKER_SERVICE_KAFKA_BROKERS: kafka:9094
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/gateway.Dockerfile
+    container_name: gateway
+    depends_on:
+      order-service:
+        condition: service_healthy
+    environment:
+      GATEWAY_ORDER_SERVICE_ADDRESS: order-service
+      GATEWAY_ORDER_SERVICE_PORT: "8080"
+    ports:
+      - "8081:8081"
+    command: [ "--config", "/app/gateway-service.json"]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8081/health || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
 volumes:
-  pgdata:
+  order_pgdata:
   worker_pgdata:
   kafka_data:

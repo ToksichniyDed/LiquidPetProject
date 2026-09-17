@@ -1,0 +1,15 @@
+//
+// Created by DED on 17.09.2026.
+//
+
+#ifndef LIQUIDPETPROJECT_UPSTREAMCONFIGURATIONJSONKEYS_H
+#define LIQUIDPETPROJECT_UPSTREAMCONFIGURATIONJSONKEYS_H
+
+namespace shared::models2json_mapper::keys {
+
+inline constexpr auto UPSTREAM_CONFIGURATION_HOST = "address";
+inline constexpr auto UPSTREAM_CONFIGURATION_PORT = "port";
+
+}
+
+#endif //LIQUIDPETPROJECT_UPSTREAMCONFIGURATIONJSONKEYS_H
