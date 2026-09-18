@@ -99,7 +99,7 @@ jobs:
         run: cmake --build --preset debug-gcc -j $(nproc)
 
       - name: Start infrastructure
-        run: docker compose up -d --wait postgres worker-postgres kafka
+        run: docker compose up -d --wait order-postgres worker-postgres kafka
 
       - name: Install dbmate
         run: |
@@ -125,8 +125,34 @@ jobs:
 
       - name: Show service logs on failure
         if: failure()
-        run: docker compose logs postgres worker-postgres kafka
+        run: docker compose logs order-postgres worker-postgres kafka
 
       - name: Stop infrastructure
+        if: always()
+        run: docker compose down -v
+
+  e2e-test:
+    runs-on: ubuntu-26.04
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run E2E tests
+        run: |
+          make env
+          make e2e
+
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop services
         if: always()
         run: docker compose down -v
