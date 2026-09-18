@@ -1,24 +1,24 @@
 find_package(libpqxx REQUIRED CONFIG)
 
 add_library(shared_outbox STATIC
-    OutboxPublisher.cpp
-    PostgresOutboxRepository.cpp)
+        OutboxPublisher.cpp
+        PostgresOutboxRepository.cpp)
 
 target_sources(shared_outbox PUBLIC
-    IOutboxRepository.h
-    OutboxRepositoryQueries.h
+        IOutboxRepository.h
+        OutboxRepositoryQueries.h
 )
 
 target_link_libraries(shared_outbox
-    PUBLIC
-    shared_models
-    shared_messaging
-    shared_repository
-    shared_include_paths
-    PRIVATE
-    shared_logging
-    shared_repository_postgres
-    libpqxx::pqxx
+        PUBLIC
+        shared_models
+        shared_messaging
+        shared_repository
+        shared_include_paths
+        PRIVATE
+        shared_logging
+        shared_repository_postgres
+        libpqxx::pqxx
 )
 
 target_include_directories(shared_outbox PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -28,26 +28,26 @@ if (BUILD_TESTING)
 
     add_library(shared_outbox_mocks INTERFACE)
     target_sources(shared_outbox_mocks INTERFACE
-        FILE_SET HEADERS
-        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
-        FILES
-        tests/MockEventPublisher.h
-        tests/MockOutboxRepository.h
+            FILE_SET HEADERS
+            BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+            FILES
+            tests/MockEventPublisher.h
+            tests/MockOutboxRepository.h
     )
     target_link_libraries(shared_outbox_mocks INTERFACE
-        shared_outbox
-        GTest::gmock
+            shared_outbox
+            GTest::gmock
     )
 
     set(ORDER_REPOSITORY_TEST_SOURCES
-        tests/OutboxPublisherTest.cpp
+            tests/OutboxPublisherTest.cpp
     )
 
     add_executable(shared_outbox_tests ${ORDER_REPOSITORY_TEST_SOURCES})
     target_link_libraries(shared_outbox_tests PRIVATE
-        shared_outbox
-        shared_outbox_mocks
-        GTest::gtest_main
+            shared_outbox
+            shared_outbox_mocks
+            GTest::gtest_main
     )
 
     include(GoogleTest)
@@ -55,16 +55,17 @@ if (BUILD_TESTING)
 
     # интеграционные тесты
     add_executable(shared_outbox_integration_tests
-        tests/PostgresOutboxRepositoryIntegrationTest.cpp
+            tests/PostgresOutboxRepositoryIntegrationTest.cpp
     )
     target_link_libraries(shared_outbox_integration_tests PRIVATE
-        shared_outbox
-        shared_repository
-        libpqxx::pqxx
-        GTest::gtest_main
+            shared_outbox
+            shared_repository
+            libpqxx::pqxx
+            GTest::gtest_main
     )
 
     gtest_discover_tests(shared_outbox_integration_tests
-        PROPERTIES LABELS integration
+            PROPERTIES LABELS integration
+            RUN_SERIAL TRUE
     )
 endif ()
