@@ -61,6 +61,7 @@ if(BUILD_TESTING)
     )
 
     gtest_discover_tests(order_repository_integration_tests
-        PROPERTIES LABELS integration
+            PROPERTIES LABELS integration
+            RUN_SERIAL TRUE
     )
 endif()
