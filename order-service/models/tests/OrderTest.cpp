@@ -434,3 +434,40 @@ TEST_F(OrderRestoreTest, FailsWithEmptyItems) {
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), OrderError::EmptyItems);
 }
+
+namespace {
+    struct OrderMarkReservedTestCase {
+        std::string testName;
+        Order::OrderStatus fromStatus;
+        bool expectSuccess;
+    };
+}
+
+class OrderMarkReservedTest : public ::testing::TestWithParam<OrderMarkReservedTestCase> {};
+
+TEST_P(OrderMarkReservedTest, MarkReserved) {
+    const auto& testCase = GetParam();
+    auto order = Order::restore(createUserId(), createOrderId(), {createOrderItem(1, 1000)},
+                                testCase.fromStatus).value();
+
+    const auto result = order.markReserved();
+
+    if (testCase.expectSuccess) {
+        ASSERT_TRUE(result.has_value());
+        EXPECT_EQ(order.status(), Order::OrderStatus::Reserved);
+        return;
+    }
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error(), OrderError::InvalidStatusTransition);
+    EXPECT_EQ(order.status(), testCase.fromStatus);  // состояние не изменилось
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    OrderTests, OrderMarkReservedTest,
+    ::testing::Values(
+        OrderMarkReservedTestCase{.testName = "FromCreated", .fromStatus = Order::OrderStatus::Created, .expectSuccess = true},
+        OrderMarkReservedTestCase{.testName = "FromReserved", .fromStatus = Order::OrderStatus::Reserved, .expectSuccess = false},
+        OrderMarkReservedTestCase{.testName = "FromShipped", .fromStatus = Order::OrderStatus::Shipped, .expectSuccess = false},
+        OrderMarkReservedTestCase{.testName = "FromCancelled", .fromStatus = Order::OrderStatus::Cancelled, .expectSuccess = false}),
+    [](const ::testing::TestParamInfo<OrderMarkReservedTestCase>& info) { return info.param.testName; });
