@@ -20,6 +20,7 @@ namespace shared::http {
 
         beastResponse.result(static_cast<boost::beast::http::status>(std::to_underlying(response.status)));
         beastResponse.body() = response.body;
+        beastResponse.keep_alive(false);
         beastResponse.prepare_payload();
 
         return beastResponse;
