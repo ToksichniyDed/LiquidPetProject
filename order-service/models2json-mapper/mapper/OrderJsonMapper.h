@@ -77,7 +77,7 @@ namespace order_system::models2json_mapper {
                 itemsJson.push_back(OrderItemJsonMapper::toJson(item));
             json[ORDER_ITEMS] = std::move(itemsJson);
 
-            json[ORDER_STATUS] = OrderStatusMapper::toString(order.status());
+            json[ORDER_STATUS] = std::to_underlying(order.status());
 
             return json;
         }

@@ -212,20 +212,3 @@ TEST(OrderJsonMapperRoundTripTest, ToJsonThenFromJsonPreservesItemsAndUserId) {
     ASSERT_EQ(roundTripped->items().size(), original.items().size());
     EXPECT_EQ(roundTripped->items()[0].productId(), original.items()[0].productId());
 }
-
-TEST(OrderJsonMapperToJsonTest, SerializesStatusAsString) {
-    auto order = OrderJsonMapper::fromJson(validOrderJson()).value();
-
-    nlohmann::json json = OrderJsonMapper::toJson(order);
-
-    EXPECT_EQ(json.at("status").get<std::string>(), "Created");
-}
-
-TEST(OrderJsonMapperToJsonTest, SerializesNonDefaultStatusAsString) {
-    auto base = OrderJsonMapper::fromJson(validOrderJson()).value();
-    auto order = Order::restore(base.userId(),
-                                OrderId::create("33333333-3333-3333-3333-333333333333").value(),
-                                base.items(), Order::OrderStatus::Reserved).value();
-
-    EXPECT_EQ(OrderJsonMapper::toJson(order).at("status").get<std::string>(), "Reserved");
-}

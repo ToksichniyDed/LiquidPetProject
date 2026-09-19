@@ -144,15 +144,6 @@ namespace order_system::models {
             return Order{std::move(userId), std::move(items)};
         }
 
-        static std::expected<Order, std::error_code> restore(UserId userId, OrderId orderId,
-                                                             std::vector<OrderItem> items, OrderStatus status)
-        {
-            if (items.empty())
-                return std::unexpected(OrderError::EmptyItems);
-
-            return Order{std::move(userId), std::move(orderId), std::move(items), status};
-        }
-
         const UserId& userId() const { return _userId; }
         const std::optional<OrderId>& orderId() const { return _orderId; }
         const std::vector<OrderItem>& items() const { return _items; }
@@ -185,12 +176,6 @@ namespace order_system::models {
         explicit Order(UserId userId, std::vector<OrderItem> items) : _userId(std::move(userId)),
                                                                       _orderId(std::nullopt), _items(std::move(items)),
                                                                       _status(OrderStatus::Created) {
-        }
-
-        Order(UserId userId, OrderId orderId, std::vector<OrderItem> items, OrderStatus status)
-            : _userId(std::move(userId)), _orderId(std::move(orderId)),
-              _items(std::move(items)), _status(status)
-        {
         }
 
     private:
