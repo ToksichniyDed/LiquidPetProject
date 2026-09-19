@@ -54,20 +54,24 @@ namespace order_system::repository {
     class OrderRowMapper {
     public:
         static std::expected<Order, std::error_code> fromRows(const pqxx::row& orderRow, const pqxx::result& itemRows) {
-            return UserId::create(orderRow[columns::ORDER_USER_ID].as<std::string>())
-                   .and_then([&](const UserId& userId) {
-                       return parseItems(itemRows)
-                               .and_then([&userId](std::vector<OrderItem> items) {
-                                   return Order::create(std::move(userId), std::move(items));
-                               });
-                   })
-                   .and_then([&orderRow](Order order) {
-                       return OrderId::create(orderRow[columns::ORDER_ID].as<std::string>())
-                               .transform([order = std::move(order)](OrderId orderId) mutable {
-                                   order.assignId(std::move(orderId));
-                                   return std::move(order);
-                               });
-                   });
+            auto userId = UserId::create(orderRow[columns::ORDER_USER_ID].as<std::string>());
+            if (!userId.has_value())
+                return std::unexpected(userId.error());
+
+            auto orderId = OrderId::create(orderRow[columns::ORDER_ID].as<std::string>());
+            if (!orderId.has_value())
+                return std::unexpected(orderId.error());
+
+            auto status = OrderStatusMapper::fromString(orderRow[columns::ORDER_STATUS].as<std::string>());
+            if (!status.has_value())
+                return std::unexpected(status.error());
+
+            auto items = parseItems(itemRows);
+            if (!items.has_value())
+                return std::unexpected(items.error());
+
+            return Order::restore(std::move(userId.value()), std::move(orderId.value()),
+                                  std::move(items.value()), status.value());
         }
 
     private:
