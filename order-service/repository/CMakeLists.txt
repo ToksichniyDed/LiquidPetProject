@@ -30,7 +30,9 @@ if(BUILD_TESTING)
     target_sources(order_repository_mocks INTERFACE
         FILE_SET HEADERS
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
-        FILES MockOrderRepository.h
+            FILES
+            MockOrderRepository.h
+            MockOrderStatusRepository.h
     )
     target_link_libraries(order_repository_mocks INTERFACE
         order_repository
