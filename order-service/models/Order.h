@@ -54,8 +54,7 @@ namespace order_system::models {
     enum class OrderError : std::uint8_t {
         EmptyItems = 1,
         InvalidItems,
-        UnknownStatus,
-        InvalidStatusTransition
+        UnknownStatus
     };
 
     class OrderErrorCategory : public std::error_category {
@@ -68,8 +67,6 @@ namespace order_system::models {
                     return "empty items";
                 case OrderError::InvalidItems:
                     return "invalid items";
-                case OrderError::InvalidStatusTransition:
-                    return "invalid status transition";
                 default:
                     return "unknown order error";
             }
@@ -182,15 +179,6 @@ namespace order_system::models {
 
         void assignId(OrderId id) {
             _orderId = std::move(id);
-        }
-
-        // Created => Reserved. Из любого другого статуса переход запрещён; при ошибке состояние не меняется.
-        std::expected<void, std::error_code> markReserved() {
-            if (_status != OrderStatus::Created)
-                return std::unexpected(OrderError::InvalidStatusTransition);
-
-            _status = OrderStatus::Reserved;
-            return {};
         }
 
     private:

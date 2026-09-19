@@ -8,10 +8,9 @@
 #include <models/DatabaseConfiguration.h>
 
 #include "IOrderRepository.h"
-#include "IOrderStatusRepository.h"
 
 namespace order_system::repository {
-    class PostgresOrderRepository : public IOrderRepository , public IOrderStatusRepository  {
+    class PostgresOrderRepository : public IOrderRepository {
     public:
         explicit PostgresOrderRepository(const shared::models::DatabaseConfiguration& config);
         ~PostgresOrderRepository() override;
@@ -21,9 +20,6 @@ namespace order_system::repository {
 
         std::expected<models::OrderId, std::error_code> save(const models::Order& order) override;
         std::expected<models::Order, std::error_code> findById(const models::OrderId& id) override;
-        std::expected<bool, std::error_code> changeStatus(const models::OrderId& id,
-                                                          models::Order::OrderStatus fromStatus,
-                                                          models::Order::OrderStatus toStatus) override;
 
     private:
         class Impl;

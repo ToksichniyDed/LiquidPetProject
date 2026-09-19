@@ -174,24 +174,4 @@ namespace shared::messaging
         _impl->_thread.request_stop();
     }
 
-    std::expected<std::unique_ptr<KafkaEventConsumer>, std::error_code> KafkaEventConsumer::createWithRetry(
-        const KafkaConsumerConfiguration& configuration, int maxAttempts, std::chrono::milliseconds retryDelay)
-    {
-        for (int attempt = 1; attempt <= maxAttempts; ++attempt)
-        {
-            try
-            {
-                return std::make_unique<KafkaEventConsumer>(configuration);
-            }
-            catch (const std::exception& e)
-            {
-                SPDLOG_LOGGER_WARN(shared::logger::get("KafkaEventConsumer"),
-                                   "Kafka consumer init failed (attempt {}/{}): {}", attempt, maxAttempts, e.what());
-                if (attempt < maxAttempts)
-                    std::this_thread::sleep_for(retryDelay);
-            }
-        }
-
-        return std::unexpected(EventConsumerError::ConnectionFailure);
-    }
 } // namespace shared::messaging

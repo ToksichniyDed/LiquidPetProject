@@ -29,7 +29,6 @@ class PostgresOrderRepository::Impl {
         _connection.prepare(INSERT_OUTBOX_EVENT, INSERT_OUTBOX_EVENT_SQL);
         _connection.prepare(SELECT_ORDER, SELECT_ORDER_SQL);
         _connection.prepare(SELECT_ORDER_ITEMS, SELECT_ORDER_ITEMS_SQL);
-        _connection.prepare(UPDATE_ORDER_STATUS, UPDATE_ORDER_STATUS_SQL);
 
         SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database connection successfully!");
         SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database name : {}", config.databaseName());
@@ -89,8 +88,7 @@ std::expected<Order, std::error_code> PostgresOrderRepository::findById(const Or
         pqxx::work work(_impl->_connection);
 
         auto orderRows = work.exec(pqxx::prepped{SELECT_ORDER}, pqxx::params{id.value()});
-        if (orderRows.empty())
-            return std::unexpected(RepositoryError::NotFound);
+        if (orderRows.empty()) return std::unexpected(RepositoryError::NotFound);
 
         auto itemsRow = work.exec(pqxx::prepped{SELECT_ORDER_ITEMS}, pqxx::params{id.value()});
 
@@ -98,28 +96,6 @@ std::expected<Order, std::error_code> PostgresOrderRepository::findById(const Or
 
         return OrderRowMapper::fromRows(orderRows.one_row(), itemsRow);
     } catch (const std::exception& e) {
-        return std::unexpected(mapPqxxException(e));
-    }
-}
-
-std::expected<bool, std::error_code> PostgresOrderRepository::changeStatus(const OrderId& id,
-    Order::OrderStatus fromStatus, Order::OrderStatus toStatus)
-{
-    try
-    {
-        pqxx::work work(_impl->_connection);
-
-        const auto result = work.exec(pqxx::prepped{UPDATE_ORDER_STATUS},
-                                      pqxx::params{
-                                          OrderStatusMapper::toString(toStatus), id.value(),
-                                          OrderStatusMapper::toString(fromStatus)
-                                      });
-
-        work.commit();
-
-        return result.affected_rows() > 0;
-    } catch (const std::exception& e)
-    {
         return std::unexpected(mapPqxxException(e));
     }
 }
