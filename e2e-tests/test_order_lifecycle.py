@@ -40,6 +40,10 @@ def test_order_created_via_gateway_is_processed_by_worker(
     processed = poll_for_processed_event(worker_db_connection, event_id)
     assert processed, "worker-service не обработал событие вовремя"
 
+    # Assert — цикл замкнут: order-service прочитал orders.reserved и перевёл заказ в Reserved
+    reserved_order = poll_for_order_status(http_session, gateway_url, order_id, "Reserved")
+    assert reserved_order is not None, "заказ не перешёл в статус Reserved вовремя"
+
 
 def test_created_order_is_retrievable_via_get(http_session, gateway_url):
     # Arrange
@@ -59,3 +63,4 @@ def test_created_order_is_retrievable_via_get(http_session, gateway_url):
     assert order["userId"] == payload["userId"]
     assert len(order["items"]) == 1
     assert order["items"][0]["quantity"] == 3
+    assert order["status"] in ("Created", "Reserved")

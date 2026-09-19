@@ -89,6 +89,8 @@ TEST_F(PostgresOrderRepositoryIntegrationTest, SavePersistsOrderRetrievableByFin
     EXPECT_EQ(found->items()[0].quantity(), order.items()[0].quantity());
 
     EXPECT_EQ(found->items()[0].priceAtOrderTime().minorUnits(), 500);
+
+    EXPECT_EQ(found->status(), Order::OrderStatus::Created);
 }
 
 TEST_F(PostgresOrderRepositoryIntegrationTest, FindByIdReturnsNotFoundForUnknownId) {
@@ -186,4 +188,65 @@ TEST_F(PostgresOrderRepositoryIntegrationTest, SaveWithMultipleItemsPersistsAllO
     ASSERT_TRUE(found.has_value()) << found.error().message();
 
     EXPECT_EQ(found->items().size(), 2);
+}
+
+TEST_F(PostgresOrderRepositoryIntegrationTest, FindByIdReturnsStatusStoredInDatabase) {
+    auto saveResult = repository->save(buildTestOrder(USER_ID, PRODUCT_ID));
+    ASSERT_TRUE(saveResult.has_value()) << saveResult.error().message();
+
+    pqxx::work update(*rawConnection);
+    update.exec("UPDATE orders SET status = 'Reserved' WHERE order_id = " +
+                update.quote(saveResult.value().value()));
+    update.commit();
+
+    auto found = repository->findById(saveResult.value());
+
+    ASSERT_TRUE(found.has_value()) << found.error().message();
+    EXPECT_EQ(found->status(), Order::OrderStatus::Reserved);
+}
+
+TEST_F(PostgresOrderRepositoryIntegrationTest, ChangeStatusAppliesTransitionWhenStatusMatches) {
+    auto saveResult = repository->save(buildTestOrder(USER_ID, PRODUCT_ID));
+    ASSERT_TRUE(saveResult.has_value()) << saveResult.error().message();
+
+    auto changed = repository->changeStatus(saveResult.value(), Order::OrderStatus::Created,
+                                            Order::OrderStatus::Reserved);
+
+    ASSERT_TRUE(changed.has_value()) << changed.error().message();
+    EXPECT_TRUE(changed.value());
+
+    pqxx::work check(*rawConnection);
+    auto rows = check.exec("SELECT status FROM orders WHERE order_id = " + check.quote(saveResult.value().value()));
+    check.commit();
+    EXPECT_EQ(rows[0]["status"].as<std::string>(), "Reserved");
+}
+
+TEST_F(PostgresOrderRepositoryIntegrationTest, ChangeStatusDoesNothingWhenStatusDiffers) {
+    auto saveResult = repository->save(buildTestOrder(USER_ID, PRODUCT_ID));
+    ASSERT_TRUE(saveResult.has_value()) << saveResult.error().message();
+
+    pqxx::work update(*rawConnection);
+    update.exec("UPDATE orders SET status = 'Cancelled' WHERE order_id = " +
+                update.quote(saveResult.value().value()));
+    update.commit();
+
+    auto changed = repository->changeStatus(saveResult.value(), Order::OrderStatus::Created,
+                                            Order::OrderStatus::Reserved);
+
+    ASSERT_TRUE(changed.has_value()) << changed.error().message();
+    EXPECT_FALSE(changed.value());
+
+    pqxx::work check(*rawConnection);
+    auto rows = check.exec("SELECT status FROM orders WHERE order_id = " + check.quote(saveResult.value().value()));
+    check.commit();
+    EXPECT_EQ(rows[0]["status"].as<std::string>(), "Cancelled");
+}
+
+TEST_F(PostgresOrderRepositoryIntegrationTest, ChangeStatusReturnsFalseForUnknownOrder) {
+    auto id = OrderId::create(NON_EXISTENT_ORDER_ID).value();
+
+    auto changed = repository->changeStatus(id, Order::OrderStatus::Created, Order::OrderStatus::Reserved);
+
+    ASSERT_TRUE(changed.has_value()) << changed.error().message();
+    EXPECT_FALSE(changed.value());
 }
