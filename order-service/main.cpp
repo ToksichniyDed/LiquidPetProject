@@ -6,14 +6,12 @@
 #include <CQRS/GetOrderHandler.h>
 #include <CQRS/HealthHandler.h>
 #include <IOrderRepository.h>
-#include <OrderReservedHandler.h>
 #include <PostgresOrderRepository.h>
 #include <RoutePaths.h>
 #include <http/HttpServer.h>
 #include <http/Route.h>
 #include <logging/Logger.h>
 #include <messaging/producer/KafkaEventPublisher.h>
-#include <messaging/consumer/KafkaEventConsumer.h>
 #include <models/NetworkConfiguration.h>
 #include <models/EnvironmentConfiguration.h>
 #include <models2json-mapper/mapper/NetworkConfigurationJsonMapper.h>
@@ -161,39 +159,10 @@ auto databaseConfiguration = unwrapOrExit(
     shared::outbox::OutboxPublisher outboxPublisher(outboxRepository, eventPublisher, "orders.created");
     outboxPublisher.start();
 
-    std::shared_ptr<order_system::repository::PostgresOrderRepository> reservationRepository;
-    try
-    {
-        reservationRepository = std::make_shared<order_system::repository::PostgresOrderRepository>(
-            databaseConfiguration);
-    }
-    catch (const std::exception& e)
-    {
-        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "Error creating reservation repository: {}", e.what());
-        return 1;
-    }
-
-    order_service::event_handlers::OrderReservedHandler reservedHandler(*reservationRepository, *reservationRepository);
-
-    auto reservedConsumer = unwrapOrExit(shared::messaging::KafkaEventConsumer::createWithRetry(
-        shared::messaging::KafkaConsumerConfiguration{
-            .brokers = kafkaBrokers, .groupId = "order-service-group", .topic = "orders.reserved"
-        },
-        10, std::chrono::seconds(3)));
-
-    if (auto startResult = reservedConsumer->start(reservedHandler); !startResult.has_value())
-    {
-        SPDLOG_LOGGER_CRITICAL(shared::logger::get("main"), "Failed to start Kafka consumer: {}",
-                               startResult.error().message());
-        outboxPublisher.stop();
-        return 1;
-    }
-
     shared::http::HttpServer server{std::move(networkConfiguration), buildRoutes(repository)};
     server.run();
 
-    reservedConsumer->stop();
     outboxPublisher.stop();
 
-    return EXIT_SUCCESS;
+    return 0;
 }
