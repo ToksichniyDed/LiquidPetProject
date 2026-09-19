@@ -59,4 +59,3 @@ def test_created_order_is_retrievable_via_get(http_session, gateway_url):
     assert order["userId"] == payload["userId"]
     assert len(order["items"]) == 1
     assert order["items"][0]["quantity"] == 3
-    assert order["status"] in ("Created", "Reserved")

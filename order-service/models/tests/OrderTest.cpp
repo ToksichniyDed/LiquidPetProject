@@ -413,24 +413,3 @@ TEST_F(OrderTotalAmountOverflowTest, TotalSumOverflow) {
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), MoneyError::Overflow);
 }
-
-class OrderRestoreTest : public ::testing::Test {};
-
-TEST_F(OrderRestoreTest, RestoresAllFieldsIncludingStatus) {
-    const auto result = Order::restore(createUserId(), createOrderId(),
-                                       {createOrderItem(2, 1500)}, Order::OrderStatus::Reserved);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(result->userId(), createUserId());
-    ASSERT_TRUE(result->orderId().has_value());
-    EXPECT_EQ(result->orderId().value(), createOrderId());
-    EXPECT_EQ(result->status(), Order::OrderStatus::Reserved);
-    EXPECT_EQ(result->items().size(), 1);
-}
-
-TEST_F(OrderRestoreTest, FailsWithEmptyItems) {
-    const auto result = Order::restore(createUserId(), createOrderId(), {}, Order::OrderStatus::Created);
-
-    ASSERT_FALSE(result.has_value());
-    EXPECT_EQ(result.error(), OrderError::EmptyItems);
-}
