@@ -67,3 +67,13 @@ def poll_for_processed_event(connection, event_id: str) -> bool | None:
         )
         row = cursor.fetchone()
         return True if row else None
+
+@retry(stop=stop_after_delay(15), wait=wait_fixed(0.3), retry=retry_if_result(_is_none))
+def poll_for_order_status(session, gateway_url: str, order_id: str, expected_status: str) -> dict | None:
+    """Ждёт, пока GET /orders/{id} вернёт заказ с нужным статусом (замыкание цикла резервирования:
+    worker -> orders.reserved -> order-service). Возвращает тело заказа или None."""
+    response = session.get(f"{gateway_url}/orders/{order_id}", timeout=5)
+    if response.status_code != 200:
+        return None
+    order = response.json()
+    return order if order["status"] == expected_status else None
