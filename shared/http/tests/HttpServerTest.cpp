@@ -131,4 +131,62 @@ TEST_F(HttpServerTest, StopClosesAcceptorAndThreadJoinsCleanly) {
     server->stop();
     serverThread.join();
 }
+
+// Регрессия на баг из CI: сервер обещал keep-alive, но закрывал соединение после первого ответа,
+// и requests.Session падал с RemoteDisconnected на втором запросе. Теперь несколько запросов
+// подряд должны идти по одному и тому же TCP-соединению.
+TEST_F(HttpServerTest, ServesSeveralRequestsOnOneKeepAliveConnection) {
+    startServerOn(18085);
+
+    boost::asio::io_context ioContext;
+    tcp::socket socket(ioContext);
+    boost::asio::connect(socket, tcp::resolver(ioContext).resolve("127.0.0.1", std::to_string(testPort)));
+
+    beast::flat_buffer buffer;
+
+    for (int i = 0; i < 3; ++i) {
+        const auto body = "ping-" + std::to_string(i);
+
+        beast_http::request<beast_http::string_body> request{beast_http::verb::post, "/echo", 11};
+        request.set(beast_http::field::host, "127.0.0.1");
+        request.body() = body;
+        request.prepare_payload();
+        beast_http::write(socket, request);
+
+        beast_http::response<beast_http::string_body> response;
+        beast_http::read(socket, buffer, response);
+
+        EXPECT_EQ(response.result_int(), 200);
+        EXPECT_EQ(response.body(), body);
+        EXPECT_TRUE(response.keep_alive()) << "сервер не должен объявлять Connection: close на запрос " << i;
+    }
+}
+
+// Клиент попросил закрыть соединение: сервер отвечает "Connection: close" и закрывает его сам.
+TEST_F(HttpServerTest, ClosesConnectionWhenClientRequestsConnectionClose) {
+    startServerOn(18086);
+
+    boost::asio::io_context ioContext;
+    tcp::socket socket(ioContext);
+    boost::asio::connect(socket, tcp::resolver(ioContext).resolve("127.0.0.1", std::to_string(testPort)));
+
+    beast_http::request<beast_http::string_body> request{beast_http::verb::get, "/health", 11};
+    request.set(beast_http::field::host, "127.0.0.1");
+    request.keep_alive(false);
+    request.prepare_payload();
+    beast_http::write(socket, request);
+
+    beast::flat_buffer buffer;
+    beast_http::response<beast_http::string_body> response;
+    beast_http::read(socket, buffer, response);
+
+    EXPECT_EQ(response.result_int(), 200);
+    EXPECT_FALSE(response.keep_alive());
+
+    // После ответа сервер закрывает свою сторону: следующее чтение видит конец потока
+    beast::error_code ec;
+    beast_http::response<beast_http::string_body> nothing;
+    beast_http::read(socket, buffer, nothing, ec);
+    EXPECT_EQ(ec, beast_http::error::end_of_stream);
+}
 }

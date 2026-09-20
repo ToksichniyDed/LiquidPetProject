@@ -5,6 +5,9 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/core.hpp>
 
+#include <chrono>
+#include <functional>
+
 #include "HttpMessageConverter.h"
 #include "HttpServer.h"
 #include <logging/Logger.h>
@@ -14,6 +17,84 @@ namespace shared::http {
     namespace beast = boost::beast;
     namespace beast_http = beast::http;
     using tcp = boost::asio::ip::tcp;
+
+    namespace {
+
+        // Сколько соединение может простаивать между запросами (и сколько отводится на запись ответа)
+        constexpr auto CONNECTION_TIMEOUT = std::chrono::seconds(30);
+
+        using BeastRequest = beast_http::request<beast_http::string_body>;
+        using BeastResponse = beast_http::response<beast_http::string_body>;
+        using RequestHandler = std::function<BeastResponse(const BeastRequest&)>;
+
+        // Одно клиентское соединение. Обслуживает запросы по очереди,
+        // пока клиент не закроет соединение, не попросит "Connection: close" или не истечёт таймаут простоя.
+        // Живёт, пока на неё ссылается хотя бы одна незавершённая асинхронная операция.
+        class HttpSession : public std::enable_shared_from_this<HttpSession> {
+        public:
+            HttpSession(tcp::socket socket, RequestHandler handler)
+                : _stream(std::move(socket)), _handler(std::move(handler)) {
+            }
+
+            void run() {
+                doRead();
+            }
+
+        private:
+            void doRead() {
+                _request = {};
+                _stream.expires_after(CONNECTION_TIMEOUT);
+
+                beast_http::async_read(_stream, _buffer, _request,
+                                       [self = shared_from_this()](const beast::error_code& ec, std::size_t) {
+                                           self->onRead(ec);
+                                       });
+            }
+
+            void onRead(const beast::error_code& ec) {
+                if (ec == beast_http::error::end_of_stream)
+                    return close();
+
+                if (ec)
+                    return;
+
+                _response = _handler(_request);
+                // Ответ повторяет версию и keep-alive запроса
+                _response.version(_request.version());
+                _response.keep_alive(_request.keep_alive());
+
+                _stream.expires_after(CONNECTION_TIMEOUT);
+
+                beast_http::async_write(_stream, _response,
+                                        [self = shared_from_this()](const beast::error_code& writeEc, std::size_t) {
+                                            self->onWrite(writeEc);
+                                        });
+            }
+
+            void onWrite(const beast::error_code& ec) {
+                if (ec)
+                    return;
+
+                if (!_response.keep_alive())
+                    return close();
+
+                doRead();
+            }
+
+            void close() {
+                beast::error_code ec;
+                _stream.socket().shutdown(tcp::socket::shutdown_send, ec);
+            }
+
+        private:
+            beast::tcp_stream _stream;
+            beast::flat_buffer _buffer;
+            BeastRequest _request;
+            BeastResponse _response;
+            RequestHandler _handler;
+        };
+
+    }
 
     HttpServer::HttpServer(
         models::NetworkConfiguration config,
@@ -60,37 +141,17 @@ namespace shared::http {
     }
 
     void HttpServer::doAccept() {
-        auto socket = std::make_shared<tcp::socket>(_ioContext);
-
-        _acceptor.async_accept(*socket, [this, socket](const beast::error_code& ec) {
+        _acceptor.async_accept([this](const beast::error_code& ec, tcp::socket socket) {
             if (!ec) {
-                handleConnection(socket);
+                std::make_shared<HttpSession>(std::move(socket), [this](const BeastRequest& request) {
+                    return handleRequest(request);
+                })->run();
             }
 
             if (_acceptor.is_open()) {
                 doAccept();
             }
         });
-    }
-
-    void HttpServer::handleConnection(std::shared_ptr<tcp::socket> socket) const {
-        auto buffer = std::make_shared<beast::flat_buffer>();
-        auto request = std::make_shared<beast_http::request<beast_http::string_body>>();
-
-        beast_http::async_read(*socket, *buffer, *request,
-                               [this, socket, buffer, request](const beast::error_code& ec, std::size_t) {
-                                   if (ec)
-                                       return;
-
-                                   auto response = std::make_shared<beast_http::response<beast_http::string_body>>(
-                                       handleRequest(*request));
-
-                                   beast_http::async_write(*socket, *response,
-                                                           [socket, response](const beast::error_code&, std::size_t) {
-                                                               boost::system::error_code shutdownEc;
-                                                               socket->shutdown(tcp::socket::shutdown_send, shutdownEc);
-                                                           });
-                               });
     }
 
     beast_http::response<beast_http::string_body> HttpServer::handleRequest(
