@@ -9,3 +9,6 @@ test_jsons/
 .env
 *.env
 !.env.example
+.venv/
+__pycache__/
+load-tests/reports/
