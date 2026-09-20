@@ -134,6 +134,8 @@ jobs:
   e2e-test:
     runs-on: ubuntu-26.04
     needs: build-and-test
+    # Без "needs: build-and-test": e2e собирает образы внутри Docker и от сборки на раннере
+    # не зависит, поэтому идёт параллельно.
 
     steps:
       - name: Checkout
@@ -144,10 +146,36 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Create .env
+        run: make env
+
+      # Драйвер docker-container нужен для экспорта кэша в GHA
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Собираем образы сервисов bake'ом с кэшем слоёв. Слои conan install
+      # переиспользуются, пока не менялись conanfile.txt, профиль и скрипт установки.
+      - name: Build service images
+        uses: docker/bake-action@v7
+        with:
+          source: .
+          files: docker-compose.yaml
+          targets: order-service,worker-service,gateway
+          load: true
+          set: |
+            order-service.cache-from=type=gha,scope=e2e-order-service
+            order-service.cache-to=type=gha,scope=e2e-order-service,mode=max
+            worker-service.cache-from=type=gha,scope=e2e-worker-service
+            worker-service.cache-to=type=gha,scope=e2e-worker-service,mode=max
+            gateway.cache-from=type=gha,scope=e2e-gateway
+            gateway.cache-to=type=gha,scope=e2e-gateway,mode=max
+
+      # Образы уже загружены в локальный docker, повторная сборка не нужна
+      - name: Start system
+        run: docker compose up -d --wait --no-build
+
       - name: Run E2E tests
-        run: |
-          make env
-          make e2e
+        run: make pytest
 
       - name: Show service logs on failure
         if: failure()
