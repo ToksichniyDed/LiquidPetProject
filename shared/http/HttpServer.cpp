@@ -27,7 +27,7 @@ namespace shared::http {
         using BeastResponse = beast_http::response<beast_http::string_body>;
         using RequestHandler = std::function<BeastResponse(const BeastRequest&)>;
 
-        // Одно клиентское соединение. Обслуживает запросы по очереди,
+        // Одно клиентское соединение. Обслуживает запросы по очереди (read -> handle -> write -> read ...),
         // пока клиент не закроет соединение, не попросит "Connection: close" или не истечёт таймаут простоя.
         // Живёт, пока на неё ссылается хотя бы одна незавершённая асинхронная операция.
         class HttpSession : public std::enable_shared_from_this<HttpSession> {
@@ -55,11 +55,12 @@ namespace shared::http {
                 if (ec == beast_http::error::end_of_stream)
                     return close();
 
+                // Прочие ошибки, включая таймаут простоя: соединение просто отпускаем
                 if (ec)
                     return;
 
                 _response = _handler(_request);
-                // Ответ повторяет версию и keep-alive запроса
+                // Ответ повторяет версию и keep-alive запроса: клиент сам решает, нужно ли соединение дальше
                 _response.version(_request.version());
                 _response.keep_alive(_request.keep_alive());
 
@@ -166,7 +167,17 @@ namespace shared::http {
             return HttpMessageConverter::toBeastResponse(response);
         }
 
-        response = handler->handle(request);
+        try {
+            response = handler->handle(request);
+        } catch (const std::exception& e) {
+            SPDLOG_LOGGER_ERROR(shared::logger::get("HttpServer"), "Unhandled exception in handler for {}: {}",
+                                request.path, e.what());
+            response = {.status = models::Status::InternalServerError, .body = "internal server error"};
+        } catch (...) {
+            SPDLOG_LOGGER_ERROR(shared::logger::get("HttpServer"), "Unhandled unknown exception in handler for {}",
+                                request.path);
+            response = {.status = models::Status::InternalServerError, .body = "internal server error"};
+        }
 
         return HttpMessageConverter::toBeastResponse(response);
     }
