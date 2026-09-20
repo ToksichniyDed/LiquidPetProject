@@ -112,3 +112,5 @@ e2e: e2e-up venv
 
 pytest: venv
 	$(VENV_DIR)/bin/python -m pytest e2e-tests -v
+
+-include load-tests/load-tests.mk

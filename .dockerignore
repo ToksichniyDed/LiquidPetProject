@@ -14,3 +14,4 @@ out/
 CMakeUserPresets.json
 
 e2e-tests/
+load-tests/
