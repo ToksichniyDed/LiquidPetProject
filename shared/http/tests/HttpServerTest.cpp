@@ -33,6 +33,13 @@ namespace shared::http::tests {
         }
     };
 
+    class ThrowingHandler : public IRequestHandler {
+    public:
+        Response handle(const Request&) override {
+            throw std::runtime_error("boom");
+        }
+    };
+
     beast_http::response<beast_http::string_body> sendRequest(
         const std::string& host, std::uint16_t port,
         beast_http::verb method, const std::string& target, const std::string& body = "") {
@@ -77,6 +84,7 @@ protected:
         std::vector<handlers::Route> routes = {
             {.method=Method::Get, .pathPrefix="/health", .handler=std::make_shared<HealthHandler>()},
             {.method=Method::Post, .pathPrefix="/echo", .handler=std::make_shared<EchoHandler>()},
+            {.method=Method::Get, .pathPrefix="/throw", .handler=std::make_shared<ThrowingHandler>()},
         };
 
         server = std::make_unique<HttpServer>(std::move(config), std::move(routes));
@@ -188,5 +196,17 @@ TEST_F(HttpServerTest, ClosesConnectionWhenClientRequestsConnectionClose) {
     beast_http::response<beast_http::string_body> nothing;
     beast_http::read(socket, buffer, nothing, ec);
     EXPECT_EQ(ec, beast_http::error::end_of_stream);
+}
+
+// Исключение в хендлере превращается в 500, а процесс (и следующие запросы) остаются живы
+TEST_F(HttpServerTest, HandlerExceptionBecomesInternalServerErrorAndServerSurvives) {
+    startServerOn(18087);
+
+    const auto failed = sendRequest("127.0.0.1", testPort, beast_http::verb::get, "/throw");
+    EXPECT_EQ(failed.result_int(), 500);
+
+    const auto healthy = sendRequest("127.0.0.1", testPort, beast_http::verb::get, "/health");
+    EXPECT_EQ(healthy.result_int(), 200);
+    EXPECT_EQ(healthy.body(), "ok");
 }
 }
