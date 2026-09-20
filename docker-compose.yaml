@@ -96,6 +96,7 @@ services:
     network_mode: host
 
   order-service:
+    image: order-system/order-service:dev
     build:
       context: .
       dockerfile: order-service/order-service.Dockerfile
@@ -123,6 +124,7 @@ services:
       start_period: 10s
 
   worker-service:
+    image: order-system/worker-service:dev
     build:
       context: .
       dockerfile: worker-service/worker-service.Dockerfile
@@ -141,6 +143,7 @@ services:
       WORKER_SERVICE_KAFKA_BROKERS: kafka:9094
 
   gateway:
+    image: order-system/gateway:dev
     build:
       context: .
       dockerfile: gateway/gateway.Dockerfile

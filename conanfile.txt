@@ -13,7 +13,4 @@ CMakeToolchain
 
 [options]
 gtest/*:build_gmock=True
-boost/*:without_cobalt=True
-boost/*:without_mpi=True
-boost/*:without_graph_parallel=True
-boost/*:without_python=True
+boost/*:header_only=True
