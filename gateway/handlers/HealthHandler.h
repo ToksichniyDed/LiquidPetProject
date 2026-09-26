@@ -10,8 +10,8 @@
 namespace gateway_service::handlers {
 class HealthHandler : public shared::http::IRequestHandler {
 public:
-    shared::models::Response handle(const shared::models::Request& /*request*/) override {
-        return {
+    boost::asio::awaitable<shared::models::Response> handle(const shared::models::Request& /*request*/) override {
+        co_return shared::models::Response{
             .status = shared::models::Status::Ok,
             .body = "OK"
         };

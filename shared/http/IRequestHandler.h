@@ -6,13 +6,14 @@
 #define LIQUIDPETPROJECT_IREQUESTHANDLER_H
 
 #include <models/HttpMessage.h>
+#include <boost/asio/awaitable.hpp>
 
 namespace shared::http {
     class IRequestHandler {
-public:
-       virtual ~IRequestHandler() = default;
-       virtual models::Response handle(const models::Request& request) = 0;
-};
+    public:
+        virtual ~IRequestHandler() = default;
+        virtual boost::asio::awaitable<models::Response> handle(const models::Request& request) = 0;
+    };
 }
 
 #endif //LIQUIDPETPROJECT_IREQUESTHANDLER_H

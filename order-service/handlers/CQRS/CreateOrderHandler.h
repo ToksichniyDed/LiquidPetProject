@@ -22,28 +22,28 @@ namespace order_service::handlers {
             orderRepository) {
         };
 
-        Response handle(const Request& request) override {
+        boost::asio::awaitable<Response> handle(const Request& request) override {
             nlohmann::json bodyJson;
             try {
                 bodyJson = nlohmann::json::parse(request.body);
             } catch (const nlohmann::json::parse_error&) {
-                return {.status = Status::BadRequest, .body = bodyJson.dump()};
+                co_return Response{.status = Status::BadRequest, .body = bodyJson.dump()};
             }
 
             auto orderResult = OrderJsonMapper::fromJson(bodyJson);
             if (!orderResult.has_value())
-                return {.status = Status::BadRequest, .body = orderResult.error().message()};
+                co_return Response{.status = Status::BadRequest, .body = orderResult.error().message()};
 
             Order order = std::move(orderResult.value());
 
             auto saveResult = _orderRepository->save(order);
 
             if (!saveResult.has_value())
-                return {.status = Status::InternalServerError, .body = saveResult.error().message()};
+                co_return Response{.status = Status::InternalServerError, .body = saveResult.error().message()};
 
             nlohmann::json responseJson;
             responseJson[ORDER_ID] = saveResult.value().value();
-            return {.status = Status::Created, .body = responseJson.dump()};
+            co_return Response{.status = Status::Created, .body = responseJson.dump()};
         };
 
     private:

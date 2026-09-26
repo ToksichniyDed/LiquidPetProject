@@ -17,31 +17,31 @@ namespace order_service::handlers {
             orderRepository) {
         };
 
-        Response handle(const Request& request) override {
+        boost::asio::awaitable<Response> handle(const Request& request) override {
             auto id = request.path.substr(paths::ORDERS_PREFIX.size());
 
             auto orderIdResult = OrderId::create(id);
             if (!orderIdResult.has_value()) {
-                return {.status = Status::BadRequest, .body = orderIdResult.error().message()};
+                co_return Response{.status = Status::BadRequest, .body = orderIdResult.error().message()};
             }
 
             auto orderResult = _orderRepository->findById(orderIdResult.value());
             if (!orderResult) {
                 if (orderResult.error() == RepositoryError::NotFound) {
-                    return {
+                    co_return Response{
                         .status = Status::NotFound,
                         .body = orderResult.error().message()
                     };
                 }
 
-                return {
+                co_return Response{
                     .status = Status::InternalServerError,
                     .body = orderResult.error().message()
                 };
             }
 
 
-            return {
+            co_return Response{
                 .status = Status::Ok,
                 .body = OrderJsonMapper::toJson(orderResult.value()).dump()
             };

@@ -21,21 +21,21 @@ namespace shared::http::tests {
 
     class EchoHandler : public IRequestHandler {
     public:
-        Response handle(const Request& request) override {
-            return {.status = Status::Ok, .body = request.body};
+       boost::asio::awaitable<models::Response> handle(const models::Request& request) override {
+            co_return Response{.status = Status::Ok, .body = request.body};
         }
     };
 
     class HealthHandler : public IRequestHandler {
     public:
-        Response handle(const Request&) override {
-            return {.status = Status::Ok, .body = "ok"};
+        boost::asio::awaitable<models::Response> handle(const models::Request& request) override {
+            co_return Response{.status = Status::Ok, .body = "ok"};
         }
     };
 
     class ThrowingHandler : public IRequestHandler {
     public:
-        Response handle(const Request&) override {
+        boost::asio::awaitable<models::Response> handle(const models::Request& request) override {
             throw std::runtime_error("boom");
         }
     };
