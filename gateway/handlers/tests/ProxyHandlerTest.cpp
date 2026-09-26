@@ -12,6 +12,7 @@
 #include <chrono>
 #include <thread>
 
+#include <http/tests/CoroutineTestSupport.h>
 #include "../ProxyHandler.h"
 
 using namespace gateway_service::handlers;
@@ -24,11 +25,11 @@ namespace {
 // от пути, чтобы отличать "дошло до апстрима" от "проксирование само упало".
 class UpstreamEchoHandler : public IRequestHandler {
    public:
-    Response handle(const Request& request) override {
+     boost::asio::awaitable<Response> handle(const Request& request) override {
         if (request.path == "/orders/fail") {
-            return {.status = Status::InternalServerError, .body = "upstream failed"};
+            co_return Response{.status = Status::InternalServerError, .body = "upstream failed"};
         }
-        return {.status = Status::Ok, .body = "echo:" + request.body};
+        co_return Response{.status = Status::Ok, .body = "echo:" + request.body};
     }
 };
 
@@ -84,8 +85,8 @@ TEST_F(ProxyHandlerTest, UnknownMethodReturnsMethodNotAllowedWithoutContactingUp
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Unknown, .path = "/orders", .body = ""};
-    const auto response = proxy.handle(request);
-
+    boost::asio::io_context testIoContext;
+    auto response = tests::runSync(testIoContext, proxy.handle(request));
     EXPECT_EQ(response.status, Status::MethodNotAllowed);
 }
 
@@ -94,7 +95,8 @@ TEST_F(ProxyHandlerTest, UnmatchedPathReturnsNotFound) {
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/unknown-service", .body = ""};
-    const auto response = proxy.handle(request);
+    boost::asio::io_context testIoContext;
+    auto response = tests::runSync(testIoContext, proxy.handle(request));
 
     EXPECT_EQ(response.status, Status::NotFound);
 }
@@ -105,7 +107,8 @@ TEST_F(ProxyHandlerTest, UnreachableUpstreamReturnsBadGateway) {
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/orders/123", .body = ""};
-    const auto response = proxy.handle(request);
+    boost::asio::io_context testIoContext;
+    auto response = tests::runSync(testIoContext, proxy.handle(request));
 
     EXPECT_EQ(response.status, Status::BadGateway);
 }
@@ -117,7 +120,8 @@ TEST_F(ProxyHandlerTest, ForwardsGetRequestAndReturnsUpstreamResponse) {
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/orders/123", .body = ""};
-    const auto response = proxy.handle(request);
+    boost::asio::io_context testIoContext;
+    auto response = tests::runSync(testIoContext, proxy.handle(request));
 
     EXPECT_EQ(response.status, Status::Ok);
     EXPECT_EQ(response.body, "echo:");
@@ -130,7 +134,8 @@ TEST_F(ProxyHandlerTest, ForwardsPostBodyToUpstream) {
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Post, .path = "/orders", .body = R"({"userId":"abc"})"};
-    const auto response = proxy.handle(request);
+    boost::asio::io_context testIoContext;
+    auto response = tests::runSync(testIoContext, proxy.handle(request));
 
     EXPECT_EQ(response.status, Status::Ok);
     EXPECT_EQ(response.body, R"(echo:{"userId":"abc"})");
@@ -143,7 +148,8 @@ TEST_F(ProxyHandlerTest, PropagatesUpstreamErrorStatus) {
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/orders/fail", .body = ""};
-    const auto response = proxy.handle(request);
+    boost::asio::io_context testIoContext;
+    auto response = tests::runSync(testIoContext, proxy.handle(request));
 
     EXPECT_EQ(response.status, Status::InternalServerError);
 }
@@ -158,7 +164,8 @@ TEST_F(ProxyHandlerTest, RoutesToCorrectServiceAmongMultiple) {
     ProxyHandler proxy(std::move(services));
 
     const Request request{.method = Method::Get, .path = "/orders/456", .body = ""};
-    const auto response = proxy.handle(request);
+    boost::asio::io_context testIoContext;
+    auto response = tests::runSync(testIoContext, proxy.handle(request));
 
     EXPECT_EQ(response.status, Status::Ok);
 }

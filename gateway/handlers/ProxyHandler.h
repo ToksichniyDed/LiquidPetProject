@@ -9,6 +9,7 @@
 #include <http/IRequestHandler.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <unordered_map>
 
 namespace gateway_service::handlers {
@@ -17,11 +18,9 @@ namespace gateway_service::handlers {
     public:
         explicit ProxyHandler(std::unordered_map<std::string, shared::models::UpstreamConfiguration> services);
         ~ProxyHandler() override = default;
-        shared::models::Response handle(const shared::models::Request& request) override;
+        boost::asio::awaitable<shared::models::Response> handle(const shared::models::Request& request) override;
 
     private:
-        boost::asio::io_context _ioContext;
-
         std::unordered_map<std::string, shared::models::UpstreamConfiguration> _servicesUrl;
 
     };

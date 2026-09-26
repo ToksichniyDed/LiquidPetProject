@@ -1,9 +1,9 @@
 add_library(shared_http STATIC
-    HttpMessageConverter.cpp
-    HttpServer.cpp)
+        HttpMessageConverter.cpp
+        HttpServer.cpp)
 
 target_sources(shared_http PUBLIC
-    Route.h
+        Route.h
 )
 
 find_package(Boost REQUIRED CONFIG)
@@ -14,18 +14,18 @@ if (BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)
 
     add_executable(shared_http_models2json_mapper_tests
-        tests/HttpMessageConverterTest.cpp
-        tests/HttpServerTest.cpp
+            tests/HttpMessageConverterTest.cpp
+            tests/HttpServerTest.cpp
     )
 
     target_link_libraries(shared_http_models2json_mapper_tests
-        PRIVATE
-        shared_http
-        shared_json
-        shared_logging
-        shared_models
-        Boost::headers
-        GTest::gtest_main
+            PRIVATE
+            shared_http
+            shared_json
+            shared_logging
+            shared_models
+            Boost::headers
+            GTest::gtest_main
     )
 
     include(GoogleTest)
