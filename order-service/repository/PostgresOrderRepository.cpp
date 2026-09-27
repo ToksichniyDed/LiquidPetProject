@@ -10,6 +10,10 @@
 
 #include <pqxx/pqxx>
 
+#include <memory>
+#include <thread>
+#include <unordered_map>
+
 #include "OrderRepositoryQueries.h"
 #include "mapper/OrderJsonMapper.h"
 #include "mapper/OrderRowMapper.h"
@@ -22,14 +26,12 @@ using namespace shared::logger;
 using namespace shared::repository::postgres;
 
 class PostgresOrderRepository::Impl {
-   public:
-    explicit Impl(const shared::models::DatabaseConfiguration& config) : _connection(config.toConnectionString()) {
-        _connection.prepare(INSERT_ORDER, INSERT_ORDER_SQL);
-        _connection.prepare(INSERT_ORDER_ITEM, INSERT_ORDER_ITEM_SQL);
-        _connection.prepare(INSERT_OUTBOX_EVENT, INSERT_OUTBOX_EVENT_SQL);
-        _connection.prepare(SELECT_ORDER, SELECT_ORDER_SQL);
-        _connection.prepare(SELECT_ORDER_ITEMS, SELECT_ORDER_ITEMS_SQL);
-        _connection.prepare(UPDATE_ORDER_STATUS, UPDATE_ORDER_STATUS_SQL);
+public:
+    explicit Impl(const shared::models::DatabaseConfiguration& config) : _databaseConfiguration(config) {
+        // Соединяемся один раз в конструкторе исключительно чтобы упасть сразу
+        // при старте сервиса, если БД недоступна или креды неверные.
+        pqxx::connection probe(_databaseConfiguration.toConnectionString());
+        prepareStatements(probe);
 
         SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database connection successfully!");
         SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database name : {}", config.databaseName());
@@ -38,18 +40,45 @@ class PostgresOrderRepository::Impl {
         SPDLOG_LOGGER_INFO(get("PostgresOrderRepository"), "Database user : {}", config.user());
     }
 
-   public:
-    pqxx::connection _connection;
+    pqxx::connection& connectionForCurrentThread() {
+        thread_local std::unordered_map<const Impl*, std::unique_ptr<pqxx::connection>> connections;
+
+        auto it = connections.find(this);
+        if (it == connections.end()) {
+            auto connection = std::make_unique<pqxx::connection>(_databaseConfiguration.toConnectionString());
+            prepareStatements(*connection);
+
+            SPDLOG_LOGGER_DEBUG(get("PostgresOrderRepository"),
+                                "Opened new connection for thread {}", std::this_thread::get_id());
+
+            it = connections.emplace(this, std::move(connection)).first;
+        }
+
+        return *it->second;
+    }
+
+    static void prepareStatements(pqxx::connection& connection) {
+        connection.prepare(INSERT_ORDER, INSERT_ORDER_SQL);
+        connection.prepare(INSERT_ORDER_ITEM, INSERT_ORDER_ITEM_SQL);
+        connection.prepare(INSERT_OUTBOX_EVENT, INSERT_OUTBOX_EVENT_SQL);
+        connection.prepare(SELECT_ORDER, SELECT_ORDER_SQL);
+        connection.prepare(SELECT_ORDER_ITEMS, SELECT_ORDER_ITEMS_SQL);
+        connection.prepare(UPDATE_ORDER_STATUS, UPDATE_ORDER_STATUS_SQL);
+    }
+
+private:
+    shared::models::DatabaseConfiguration _databaseConfiguration;
 };
 
 PostgresOrderRepository::PostgresOrderRepository(const shared::models::DatabaseConfiguration& config)
-    : _impl(std::make_unique<Impl>(config)) {}
+    : _impl(std::make_unique<Impl>(config)) {
+}
 
 PostgresOrderRepository::~PostgresOrderRepository() = default;
 
 std::expected<OrderId, std::error_code> PostgresOrderRepository::save(const Order& order) {
     try {
-        pqxx::work work(_impl->_connection);
+        pqxx::work work(_impl->connectionForCurrentThread());
 
         auto orderResult = work.exec(pqxx::prepped{INSERT_ORDER},
                                      pqxx::params{order.userId().value(), OrderStatusMapper::toString(order.status())});
@@ -86,7 +115,7 @@ std::expected<OrderId, std::error_code> PostgresOrderRepository::save(const Orde
 
 std::expected<Order, std::error_code> PostgresOrderRepository::findById(const OrderId& id) {
     try {
-        pqxx::work work(_impl->_connection);
+        pqxx::work work(_impl->connectionForCurrentThread());
 
         auto orderRows = work.exec(pqxx::prepped{SELECT_ORDER}, pqxx::params{id.value()});
         if (orderRows.empty())
@@ -103,11 +132,10 @@ std::expected<Order, std::error_code> PostgresOrderRepository::findById(const Or
 }
 
 std::expected<bool, std::error_code> PostgresOrderRepository::changeStatus(const OrderId& id,
-    Order::OrderStatus fromStatus, Order::OrderStatus toStatus)
-{
-    try
-    {
-        pqxx::work work(_impl->_connection);
+                                                                           Order::OrderStatus fromStatus,
+                                                                           Order::OrderStatus toStatus) {
+    try {
+        pqxx::work work(_impl->connectionForCurrentThread());
 
         const auto result = work.exec(pqxx::prepped{UPDATE_ORDER_STATUS},
                                       pqxx::params{
@@ -118,9 +146,8 @@ std::expected<bool, std::error_code> PostgresOrderRepository::changeStatus(const
         work.commit();
 
         return result.affected_rows() > 0;
-    } catch (const std::exception& e)
-    {
+    } catch (const std::exception& e) {
         return std::unexpected(mapPqxxException(e));
     }
 }
-}  // namespace order_system::repository
+} // namespace order_system::repository
