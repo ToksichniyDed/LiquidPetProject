@@ -220,7 +220,7 @@ def main() -> int:
             "",
             f"- host: {args.host}, ступень: {args.duration} с (разгон {args.ramp_seconds} с), locust {locust_version}",
             f"- CPU ядер на машине: {os.cpu_count()} (Locust и стек на одной машине)",
-            "- сервер: connection-per-request к upstream, keep-alive только клиент -> gateway, однопоточный блокирующий HttpServer",
+            "- сервер: connection-per-request к upstream, keep-alive только клиент -> gateway, многопоточный асинхронный HttpServer",
             "",
             format_table(results),
             "",
