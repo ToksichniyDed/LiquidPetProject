@@ -3,7 +3,7 @@ add_library(gateway_handlers STATIC
 
 find_package(Boost REQUIRED CONFIG)
 
-target_link_libraries(gateway_handlers PUBLIC shared_http Boost::headers)
+target_link_libraries(gateway_handlers PUBLIC shared_http shared_logging Boost::headers)
 
 if (BUILD_TESTING)
     find_package(GTest REQUIRED CONFIG)
