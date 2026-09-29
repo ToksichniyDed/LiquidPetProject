@@ -152,8 +152,6 @@ services:
     environment:
       ORDER_SERVICE_DATABASE_URL: postgresql://${ORDER_POSTGRES_USER:-orders}:${ORDER_POSTGRES_PASSWORD:-orders}@order-postgres:5432/${ORDER_POSTGRES_DB:-orders}?sslmode=disable
       ORDER_SERVICE_KAFKA_BROKERS: kafka:9094
-    ports:
-      - "8080:8080"
     command: [ "--config", "/app/order-service.json", "--address", "0.0.0.0" ]
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
@@ -167,7 +165,6 @@ services:
     build:
       context: .
       dockerfile: worker-service/worker-service.Dockerfile
-    container_name: worker-service
     depends_on:
       worker-postgres:
         condition: service_healthy
@@ -186,7 +183,6 @@ services:
     build:
       context: .
       dockerfile: gateway/gateway.Dockerfile
-    container_name: gateway
     depends_on:
       order-service:
         condition: service_healthy
