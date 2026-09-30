@@ -11,6 +11,7 @@ target_include_directories(shared_messaging PUBLIC
 target_sources(shared_messaging PUBLIC
     PublishRequest.h
     MessageMetadata.h
+    OffsetTracker.h
     consumer/IEventConsumer.h
     consumer/IEventHandler.h
     producer/IEventPublisher.h
@@ -23,6 +24,7 @@ if (BUILD_TESTING)
 
     add_executable(shared_messaging_integration_tests
             tests/KafkaEventConsumerIntegrationTest.cpp
+            tests/OffsetTrackerTest.cpp
     )
 
     target_link_libraries(shared_messaging_integration_tests PRIVATE
