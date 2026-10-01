@@ -13,6 +13,7 @@ target_sources(shared_messaging PUBLIC
     MessageMetadata.h
     OffsetTracker.h
     PartitionRegistry.h
+    WorkerPool.h
     consumer/IEventConsumer.h
     consumer/IEventHandler.h
     producer/IEventPublisher.h
