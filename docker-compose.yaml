@@ -70,6 +70,8 @@ services:
       - |
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic orders.created --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic orders.reserved --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic orders.created.dlq --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9094 --create --if-not-exists --topic orders.reserved.dlq --partitions 3 --replication-factor 1
 
   kafka-exporter:
     image: danielqsj/kafka-exporter:latest
