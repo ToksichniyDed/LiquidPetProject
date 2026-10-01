@@ -16,10 +16,9 @@ using namespace shared::logger;
 
 class PostgresWorkerRepository::Impl {
    public:
-    explicit Impl(const shared::models::DatabaseConfiguration& configuration)
-        : _connection(configuration.toConnectionString()) {
-        _connection.prepare(queries::INSERT_PROCESSED_EVENT, queries::INSERT_PROCESSED_EVENT_SQL);
-        _connection.prepare(queries::INSERT_OUTBOX_EVENT, queries::INSERT_OUTBOX_EVENT_SQL);
+    explicit Impl(const shared::models::DatabaseConfiguration& configuration) : _connectionString(configuration) {
+        pqxx::connection probe(_connectionString.toConnectionString());
+        prepareStatements(probe);
 
         SPDLOG_LOGGER_INFO(get("PostgresWorkerRepository"), "Database connection successfully!");
         SPDLOG_LOGGER_INFO(get("PostgresWorkerRepository"), "Database name : {}", configuration.databaseName());
@@ -28,8 +27,25 @@ class PostgresWorkerRepository::Impl {
         SPDLOG_LOGGER_INFO(get("PostgresWorkerRepository"), "Database user : {}", configuration.user());
     }
 
-   public:
-    pqxx::connection _connection;
+    pqxx::connection& connectionForCurrentThread() {
+        thread_local std::unordered_map<const Impl*, std::unique_ptr<pqxx::connection>> connections;
+
+        auto it = connections.find(this);
+        if (it == connections.end()) {
+            auto connection = std::make_unique<pqxx::connection>(_connectionString.toConnectionString());
+            prepareStatements(*connection);
+            it = connections.emplace(this, std::move(connection)).first;
+        }
+        return *it->second;
+    }
+
+   private:
+    static void prepareStatements(pqxx::connection& connection) {
+        connection.prepare(queries::INSERT_PROCESSED_EVENT, queries::INSERT_PROCESSED_EVENT_SQL);
+        connection.prepare(queries::INSERT_OUTBOX_EVENT, queries::INSERT_OUTBOX_EVENT_SQL);
+    }
+
+    const shared::models::DatabaseConfiguration _connectionString;
 };
 
 PostgresWorkerRepository::PostgresWorkerRepository(const shared::models::DatabaseConfiguration& configuration)
@@ -39,7 +55,7 @@ PostgresWorkerRepository::~PostgresWorkerRepository() = default;
 
 std::expected<bool, std::error_code> PostgresWorkerRepository::recordReservationIfNew(const ReservationRecord& record) {
     try {
-        pqxx::work work(_impl->_connection);
+        pqxx::work work(_impl->connectionForCurrentThread());
 
         if (auto processResult =
                 work.exec(pqxx::prepped{queries::INSERT_PROCESSED_EVENT}, pqxx::params{record.eventId.value()});
