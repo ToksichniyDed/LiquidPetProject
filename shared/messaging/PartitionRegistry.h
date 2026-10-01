@@ -165,6 +165,13 @@ public:
         return _partitions.contains(partition);
     }
 
+    // Принадлежит ли билет текущему владению партицией (не отобрана и не переназначена)
+    [[nodiscard]] bool isCurrent(const RecordTicket& ticket) const {
+        std::scoped_lock lock(_mutex);
+        const auto it = _partitions.find(ticket.partition);
+        return it != _partitions.end() && it->second.generation == ticket.generation;
+    }
+
 private:
     struct PartitionState {
         std::uint64_t generation;

@@ -220,3 +220,16 @@ TEST(PartitionRegistryConcurrencyTest, ConcurrentCompletionsLeadToFullCandidate)
     ASSERT_EQ(candidates.size(), 1);
     EXPECT_EQ(candidates[0].offset, COUNT);
 }
+
+TEST(PartitionRegistryTest, IsCurrentIsFalseAfterRevokeAndReassign) {
+    PartitionRegistry registry;
+    registry.assign({key(0)});
+    const auto ticket = registerOrFail(registry, key(0), 10);
+    EXPECT_TRUE(registry.isCurrent(ticket));
+
+    ASSERT_TRUE(registry.revoke({key(0)}).empty());
+    EXPECT_FALSE(registry.isCurrent(ticket));
+
+    registry.assign({key(0)});
+    EXPECT_FALSE(registry.isCurrent(ticket));  // партиция снова есть, но поколение другое
+}
