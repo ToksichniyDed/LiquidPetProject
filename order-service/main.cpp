@@ -14,6 +14,7 @@
 #include <logging/Logger.h>
 #include <messaging/producer/KafkaEventPublisher.h>
 #include <messaging/consumer/KafkaEventConsumer.h>
+#include <messaging/PublisherDeadLetterSink.h>
 #include <models/NetworkConfiguration.h>
 #include <models/EnvironmentConfiguration.h>
 #include <models2json-mapper/mapper/NetworkConfigurationJsonMapper.h>
@@ -175,11 +176,12 @@ auto databaseConfiguration = unwrapOrExit(
 
     order_service::event_handlers::OrderReservedHandler reservedHandler(*reservationRepository, *reservationRepository);
 
+    auto deadLetterSink = std::make_shared<shared::messaging::PublisherDeadLetterSink>(eventPublisher);
+
     auto reservedConsumer = unwrapOrExit(shared::messaging::KafkaEventConsumer::createWithRetry(
         shared::messaging::KafkaConsumerConfiguration{
-            .brokers = kafkaBrokers, .groupId = "order-service-group", .topic = "orders.reserved"
-        },
-        10, std::chrono::seconds(3)));
+            .brokers = kafkaBrokers, .groupId = "order-service-group", .topic = "orders.reserved"},
+        deadLetterSink, 10, std::chrono::seconds(3)));
 
     if (auto startResult = reservedConsumer->start(reservedHandler); !startResult.has_value())
     {

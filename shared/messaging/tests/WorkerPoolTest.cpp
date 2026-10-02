@@ -11,6 +11,7 @@
 #include <thread>
 
 #include "WorkerPool.h"
+#include "TestLogging.h"
 
 using namespace shared::messaging;
 using namespace std::chrono_literals;
