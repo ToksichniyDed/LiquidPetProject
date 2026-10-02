@@ -190,4 +190,63 @@ namespace order_service::outbox {
         publisher.stop();
     }
 
+TEST_F(OutboxPublisherTest, FullBatchWithProgressFetchesNextBatchWithoutSleeping) {
+    const auto makeEntry = [](const char* id, const char* aggregate) {
+        return OutboxEntry{.id = shared::models::OutboxEventId::create(id).value(),
+                           .aggregateId = aggregate,
+                           .eventType = "OrderCreated",
+                           .payload = "{}"};
+    };
+    const auto entryA = makeEntry("11111111-1111-1111-1111-111111111111", "order-a");
+    const auto entryB = makeEntry("22222222-2222-2222-2222-222222222222", "order-b");
+
+    std::promise<void> secondFetch;
+    auto secondFetchFuture = secondFetch.get_future();
+
+    // batchSize = 2, вернулось 2 => пачка полная
+    EXPECT_CALL(*_repository, fetchUnpublished(_))
+        .WillOnce(Return(std::vector<OutboxEntry>{entryA, entryB}))
+        .WillOnce([&secondFetch](int) {
+            secondFetch.set_value();
+            return std::expected<std::vector<OutboxEntry>, std::error_code>{std::vector<OutboxEntry>{}};
+        })
+        .WillRepeatedly(Return(std::vector<OutboxEntry>{}));
+    EXPECT_CALL(*_publisher, publish(_)).WillRepeatedly([](const PublishRequest&) { return makeReadyFuture({}); });
+    EXPECT_CALL(*_repository, markAsPublished(_)).WillRepeatedly(Return(std::expected<void, std::error_code>{}));
+
+    shared::outbox::OutboxPublisher publisher(_repository, _publisher, kTopic, std::chrono::seconds(10), 2);
+    publisher.start();
+
+    const auto status = secondFetchFuture.wait_for(std::chrono::seconds(2));
+    publisher.stop();
+
+    ASSERT_EQ(status, std::future_status::ready) << "после полной пачки с прогрессом цикл всё равно уснул";
+}
+
+TEST_F(OutboxPublisherTest, FullBatchWithoutProgressSleepsBeforeNextFetch) {
+    const auto makeEntry = [](const char* id, const char* aggregate) {
+        return OutboxEntry{.id = shared::models::OutboxEventId::create(id).value(),
+                           .aggregateId = aggregate,
+                           .eventType = "OrderCreated",
+                           .payload = "{}"};
+    };
+
+    // Полная пачка, но брокер отклоняет всё: прогресса нет => обязан спать, а не долбить брокера
+    EXPECT_CALL(*_repository, fetchUnpublished(_))
+        .Times(1)
+        .WillOnce(Return(std::vector<OutboxEntry>{makeEntry("11111111-1111-1111-1111-111111111111", "order-a"),
+                                                  makeEntry("22222222-2222-2222-2222-222222222222", "order-b")}));
+    EXPECT_CALL(*_publisher, publish(_)).WillRepeatedly([](const PublishRequest&) {
+        return makeReadyFuture(std::expected<void, std::error_code>{
+            std::unexpected(shared::messaging::EventPublisherError::BrokerRejected)});
+    });
+    EXPECT_CALL(*_repository, markAsPublished(_)).Times(0);
+
+    shared::outbox::OutboxPublisher publisher(_repository, _publisher, kTopic, std::chrono::seconds(10), 2);
+    publisher.start();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    publisher.stop();  // сон прерывается сразу, тест не ждёт 10 секунд
+}
+
 }
