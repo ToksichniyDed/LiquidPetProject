@@ -5,32 +5,38 @@
 #ifndef LIQUIDPETPROJECT_KAFKAEVENTCONSUMER_H
 #define LIQUIDPETPROJECT_KAFKAEVENTCONSUMER_H
 
-#include <memory>
 #include <chrono>
+#include <memory>
 
-#include "IEventConsumer.h"
+#include <ConsumerPipeline.h>
+#include <IDeadLetterSink.h>
 #include <models/KafkaConsumerConfiguration.h>
 
+#include "IEventConsumer.h"
+
 namespace shared::messaging {
-    class KafkaEventConsumer : public IEventConsumer {
-       public:
-        explicit KafkaEventConsumer(const KafkaConsumerConfiguration& configuration);
-        ~KafkaEventConsumer();
+//handler вызывается одновременно из нескольких потоков пула и должен быть потокобезопасным.
+class KafkaEventConsumer : public IEventConsumer {
+public:
+    KafkaEventConsumer(const KafkaConsumerConfiguration& configuration,
+                       std::shared_ptr<IDeadLetterSink> deadLetterSink,
+                       const PipelineConfiguration& pipelineConfig = {});
+    ~KafkaEventConsumer() override;
 
-        KafkaEventConsumer(const KafkaEventConsumer&) = delete;
-        KafkaEventConsumer& operator=(const KafkaEventConsumer&) = delete;
+    KafkaEventConsumer(const KafkaEventConsumer&) = delete;
+    KafkaEventConsumer& operator=(const KafkaEventConsumer&) = delete;
 
-        std::expected<void, std::error_code> start(IEventHandler& handler) override;
-        void stop() override;
+    std::expected<void, std::error_code> start(IEventHandler& handler) override;
+    void stop() override;
 
-        // Kafka может быть ещё не готова к старту сервиса: пробуем создать consumer несколько раз
-        [[nodiscard]] static std::expected<std::unique_ptr<KafkaEventConsumer>, std::error_code> createWithRetry(
-            const KafkaConsumerConfiguration& configuration, int maxAttempts, std::chrono::milliseconds retryDelay);
+    [[nodiscard]] static std::expected<std::unique_ptr<KafkaEventConsumer>, std::error_code> createWithRetry(
+        const KafkaConsumerConfiguration& configuration, std::shared_ptr<IDeadLetterSink> deadLetterSink,
+        int maxAttempts, std::chrono::milliseconds retryDelay, const PipelineConfiguration& pipelineConfig = {});
 
-       private:
-        class Impl;
-        std::unique_ptr<Impl> _impl;
-    };
-}  // namespace shared::messaging
+private:
+    class Impl;
+    std::unique_ptr<Impl> _impl;
+};
+}
 
 #endif  // LIQUIDPETPROJECT_KAFKAEVENTCONSUMER_H

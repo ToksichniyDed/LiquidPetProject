@@ -5,6 +5,7 @@
 #include <logging/Logger.h>
 #include <messaging/consumer/KafkaEventConsumer.h>
 #include <messaging/producer/KafkaEventPublisher.h>
+#include <messaging/PublisherDeadLetterSink.h>
 #include <models/DatabaseConfiguration.h>
 #include <models/EnvironmentConfiguration.h>
 #include <outbox/OutboxPublisher.h>
@@ -79,6 +80,8 @@ int main() {
     shared::outbox::OutboxPublisher outboxPublisher(outboxRepository, eventPublisher, "orders.reserved");
     outboxPublisher.start();
 
+    auto deadLetterSink = std::make_shared<shared::messaging::PublisherDeadLetterSink>(eventPublisher);
+
     worker_service::processing::OrderReservationProcessor orderProcessor;
     worker_service::handlers::OrderReservationHandler handler(*workerRepository, orderProcessor);
 
@@ -90,10 +93,11 @@ int main() {
     for (int attempt = 1; attempt <= maxRetries; ++attempt) {
         try {
             consumer.emplace(shared::messaging::KafkaConsumerConfiguration{
-                .brokers = kafkaBrokers,
-                .groupId = "worker-service-group",
-                .topic = "orders.created",
-            });
+                     .brokers = kafkaBrokers,
+                     .groupId = "worker-service-group",
+                     .topic = "orders.created",
+                 },
+                 deadLetterSink);
             break;
         } catch (const std::exception& e) {
             SPDLOG_LOGGER_WARN(shared::logger::get("main"),

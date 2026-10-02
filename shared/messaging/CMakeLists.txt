@@ -27,6 +27,7 @@ target_sources(shared_messaging_processing INTERFACE
         IDeadLetterSink.h
         PublisherDeadLetterSink.h
         RecordExecutor.h
+        ConsumerPipeline.h
 )
 target_link_libraries(shared_messaging_processing INTERFACE
         shared_include_paths
@@ -44,6 +45,7 @@ if (BUILD_TESTING)
             tests/RetryPolicyTest.cpp
             tests/WorkerPoolTest.cpp
             tests/RecordExecutorTest.cpp
+            tests/ConsumerPipelineTest.cpp
     )
     target_link_libraries(shared_messaging_tests PRIVATE
             shared_messaging_processing

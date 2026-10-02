@@ -11,6 +11,7 @@
 
 #include "PublisherDeadLetterSink.h"
 #include "RecordExecutor.h"
+#include "TestLogging.h"
 
 using namespace shared::messaging;
 using namespace std::chrono_literals;
@@ -44,7 +45,6 @@ std::expected<void, std::error_code> brokerRejected() {
 
 class RecordExecutorTest : public ::testing::Test {
    protected:
-    static void SetUpTestSuite() { shared::logger::init(true, false, spdlog::level::debug, {}, 1024, 0); }
 
     void SetUp() override {
         _registry.assign({key(0)});
